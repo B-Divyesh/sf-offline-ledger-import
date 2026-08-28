@@ -1,42 +1,38 @@
-# Handoff — Polish 1
+# Handoff — Adversarial review 2
 
-Ledger Import Check remains a static Vite TypeScript PWA with IndexedDB local storage and a hand-written offline service worker. This repair closes every finding in `.factory/review-1.md`.
+The requested no-code review is complete. The product verdict is **FAIL** with
+11 findings in `.factory/review-2.md`: 7 blocking, 1 major, and 3 minor. No
+product source was modified.
 
-## Delivered
+## What was reviewed
 
-- Complete demo isolation, including `demo:` license state; demo purchase and verification are unavailable.
-- A persistent demo banner and a pre-checked first viewport at 390px.
-- Readable CSV/receipt download assertions, a complete claims contract, route metadata, real legal/404 shells, focus handling, and 44px touch targets.
-- Plain-language copy, a 1200×630 social image, 180px apple-touch icon, and provenance notes.
+- Cold live first read at 390×844 and 1440×900.
+- One-click demo, sample visibility, reset, storage isolation, live offline
+  reload, and network interception.
+- All 17 claim commands from a clean clone.
+- Landing/README copy, all earlier review and polish findings, route metadata,
+  404, focus/Back behavior, links, visual identity, accessibility, and missed
+  leverage.
 
 ## Verification
 
-- Clean install: `npm ci` — passed, 0 vulnerabilities.
-- Unit/static contract: `npm test` — 12 passed.
-- Typecheck: `npx tsc --noEmit` — passed.
-- Deployment build: `npm run build` — passed, `dist/index.html` produced. Initial JS is 25.45 kB (9.85 kB gzip); CSS is 18.31 kB (4.93 kB gzip).
-- Browser/accessibility/privacy/offline suite: `npm run test:e2e` — 54 tests passed across desktop and 390px mobile, including Axe serious/critical scans, service-worker offline reload, route focus, and touch targets.
-- Every declared `@claim:` test runs from the `/demo` sandbox; focused final claim run for demo isolation, receipt index, price, and first viewport passed 8/8 across both projects.
+- `npm ci`: passed; 0 vulnerabilities.
+- Every exact command in `.factory/claims.json`: exited 0 on desktop and
+  mobile, while five assertion gaps are documented in the review.
+- `npm test`: 12 passed.
+- `npx tsc --noEmit`: passed.
+- `npm run build`: passed; `dist/` produced; initial JS 25.62 kB / 9.89 kB
+  gzip.
+- `npm run test:e2e`: two full runs were not repeatably green; focused reruns
+  passed. See F-2-8.
+- Live Axe landing/result scans: zero violations at mobile and desktop.
+- `/opt/fleet/lib/verify-url.sh`: passed.
+- Live and clean-build HTML/JS/CSS SHA-256 values matched.
 
-## Run and deploy
+## Known gaps / next steps
 
-```sh
-npm ci
-npm test
-npx tsc --noEmit
-npm run build
-npm run test:e2e
-/opt/fleet/lib/deploy-static.sh offline-ledger-import dist
-```
-
-## Deployment evidence
-
-- Repair commit: `fcf38b71b1eabcac7db298153942c7096bc2d594`.
-- Static deployment: Azure Static Web Apps deployment `77b1d9b9-c79b-4859-9ee9-94c521d8dd25` to `https://offline-ledger-import.sociobot.in`.
-- Cold live verifier: `.factory/evidence/live/verify-demo/verify.json` — HTTP 200, title `Demo — Ledger Import Check`, `lang=en`, one h1, one main, no console errors, no missing image alt or unnamed button.
-- Live production Axe scan at 390×844: zero serious/critical violations.
-- Captured live evidence: `.factory/evidence/live/verify-demo/screenshot-desktop.png` and `.factory/evidence/live/verify-demo/screenshot-mobile.png`.
-
-## Known gaps
-
-None.
+Implement or remove the promised saved-receipt export. Strengthen the demo
+isolation, receipt-index, price/refund, erase, no-analytics, and license-network
+claim tests.
+Stabilize the complete browser suite, then address the three copy findings and
+run review 3 from scratch.
