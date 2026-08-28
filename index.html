@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#176b52" />
+    <meta name="description" content="Check a bank CSV for duplicates and balance gaps without uploading your financial data." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <title>Ledger Import Check — private bank CSV reconciliation</title>
+    <script type="module" src="/src/app.ts"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to ledger check</a>
+    <div id="offline-banner" class="network-banner" hidden role="status">Offline mode — your saved draft and every check still work here.</div>
+    <header class="site-header">
+      <a class="wordmark" href="/" aria-label="Ledger Import Check home"><span class="wordmark-mark" aria-hidden="true">● ◼ ●</span><span>Ledger Import Check</span></a>
+      <nav aria-label="Site">
+        <a href="#how-it-works">Method</a>
+        <a href="#proof-kit">Proof Kit</a>
+        <a href="/privacy/">Privacy</a>
+      </nav>
+      <button id="install-button" class="button button-small button-quiet" type="button" hidden>Install app</button>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">Private playback for bank CSVs</p>
+          <h1 id="hero-title">Catch the skip before it hits your ledger.</h1>
+          <p class="lead">Map a statement, find repeat transactions, and prove the opening and closing balances agree. Your file stays in this browser—no account connection, no upload.</p>
+          <a class="button" href="#import-track">Check a CSV <span aria-hidden="true">↓</span></a>
+          <ul class="trust-strip" aria-label="Privacy promises">
+            <li>Works offline</li><li>No sign-in</li><li>You own the exports</li>
+          </ul>
+        </div>
+        <figure class="hero-art">
+          <picture>
+            <source type="image/avif" media="(max-width: 700px)" srcset="/assets/ledger-tape-600.avif" />
+            <source media="(max-width: 700px)" srcset="/assets/ledger-tape-600.webp" />
+            <source type="image/avif" srcset="/assets/ledger-tape-960.avif" />
+            <source type="image/webp" srcset="/assets/ledger-tape-960.webp" />
+            <img src="/assets/ledger-tape-960.jpg" width="960" height="640" alt="A transparent cassette beside a red pencil and an abstract ledger receipt on textured paper" fetchpriority="high" decoding="async" />
+          </picture>
+          <figcaption>One local copy. Three checks. A receipt you can keep.</figcaption>
+        </figure>
+      </section>
+
+      <div class="workbench" id="how-it-works">
+        <ol class="stage-rail" aria-label="Import check stages">
+          <li id="stage-1" class="active"><span>01</span><strong>Load</strong><small>Choose a statement</small></li>
+          <li id="stage-2"><span>02</span><strong>Map</strong><small>Align the columns</small></li>
+          <li id="stage-3"><span>03</span><strong>Check</strong><small>Keep the evidence</small></li>
+        </ol>
+
+        <section class="track-section" id="import-track" aria-labelledby="import-title">
+          <div class="track-heading">
+            <p class="track-number">Track 01 / source</p>
+            <h2 id="import-title">Load the bank export</h2>
+            <p>CSV, TSV, or semicolon-separated. The first row must contain column names.</p>
+          </div>
+          <div class="drop-zone" id="drop-zone">
+            <input class="visually-hidden" id="csv-file" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" />
+            <label class="drop-label" for="csv-file">
+              <span class="tape-window" aria-hidden="true"><i></i><i></i></span>
+              <strong>Choose CSV</strong>
+              <span>or drop it on this workbench</span>
+            </label>
+            <button id="sample-button" class="text-button" type="button">Try the example statement</button>
+          </div>
+          <div id="file-status" class="file-status" hidden></div>
+          <div id="import-error" class="notice notice-danger" role="alert" hidden></div>
+          <div class="local-note">
+            <span class="stamp" aria-hidden="true">LOCAL</span>
+            <p><strong>Nothing leaves this device.</strong> The draft is kept in browser storage so a refresh does not erase your place. Browser data can be cleared; download a backup for durable safekeeping.</p>
+          </div>
+          <div class="inline-actions">
+            <input class="visually-hidden" id="backup-file" type="file" accept="application/json,.json" />
+            <label class="text-button" for="backup-file">Restore draft backup</label>
+            <button id="reset-button" class="text-button danger-text" type="button" hidden>Erase local draft</button>
+          </div>
+        </section>
+
+        <section class="track-section" id="mapping-track" aria-labelledby="mapping-title" hidden>
+          <div class="track-heading">
+            <p class="track-number">Track 02 / alignment</p>
+            <h2 id="mapping-title">Tell us which column is which</h2>
+            <p>We guessed from the headings. Confirm the tracks before running the check.</p>
+          </div>
+          <form id="mapping-form" novalidate>
+            <div class="mapping-grid">
+              <label>Date column<select id="map-date" required></select></label>
+              <label>Description column<select id="map-description" required></select></label>
+              <label>Date order<select id="date-format"><option value="auto">Auto (month/day if ambiguous)</option><option value="mdy">Month / day / year</option><option value="dmy">Day / month / year</option><option value="ymd">Year / month / day</option></select></label>
+              <fieldset>
+                <legend>Amount layout</legend>
+                <label class="radio-label"><input type="radio" name="amount-mode" value="signed" checked /> One signed amount</label>
+                <label class="radio-label"><input type="radio" name="amount-mode" value="split" /> Debit + credit</label>
+              </fieldset>
+              <label id="signed-field">Amount column<select id="map-amount"></select><small>Payments should be negative; deposits positive.</small></label>
+              <label class="split-field" hidden>Debit / money out<select id="map-debit"></select></label>
+              <label class="split-field" hidden>Credit / money in<select id="map-credit"></select></label>
+              <label>Running balance <span class="optional">optional</span><select id="map-balance"></select><small>This pinpoints where a missing row starts.</small></label>
+            </div>
+
+            <div class="statement-settings">
+              <label>Statement label<input id="statement-name" type="text" maxlength="80" autocomplete="off" placeholder="e.g. Current account · March 2026" /></label>
+              <label>Currency code<input id="currency" type="text" value="USD" maxlength="3" pattern="[A-Za-z]{3}" autocomplete="off" required /></label>
+              <label>Opening balance<input id="opening-balance" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" required /></label>
+              <label>Closing balance<input id="closing-balance" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" required /></label>
+            </div>
+
+            <details class="preview">
+              <summary>Preview the first 3 source rows</summary>
+              <div class="table-scroll"><table><thead id="preview-head"></thead><tbody id="preview-body"></tbody></table></div>
+            </details>
+            <div id="mapping-error" class="notice notice-danger" role="alert" hidden></div>
+            <div class="action-row">
+              <button class="button" type="submit">Run balance check <span aria-hidden="true">▶</span></button>
+              <button id="backup-button" class="button button-secondary" type="button">Download draft backup</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="track-section result-section" id="result-track" aria-labelledby="result-title" hidden>
+          <div class="track-heading">
+            <p class="track-number">Track 03 / evidence</p>
+            <h2 id="result-title">Reconciliation receipt</h2>
+            <p id="result-explainer">Review every marked row before exporting.</p>
+          </div>
+          <div id="result-status" class="result-status" tabindex="-1"></div>
+          <dl class="meter-grid" id="result-meters"></dl>
+          <div id="balance-note" class="notice"></div>
+          <div class="result-toolbar">
+            <label class="filter-label">Show rows<select id="row-filter"><option value="all">All transactions</option><option value="issues">Only rows to review</option><option value="included">Included rows</option><option value="excluded">Excluded rows</option></select></label>
+            <p id="row-count" aria-live="polite"></p>
+          </div>
+          <div class="table-scroll transaction-table-wrap">
+            <table class="transaction-table">
+              <caption>Transactions in chronological order. Uncheck Include to mute a row from the cleaned export and balance calculation.</caption>
+              <thead><tr><th scope="col">Include</th><th scope="col">Date / description</th><th scope="col">Amount</th><th scope="col">Running balance</th><th scope="col">Finding</th></tr></thead>
+              <tbody id="result-rows"></tbody>
+            </table>
+          </div>
+          <div class="action-row export-actions">
+            <button id="export-csv" class="button" type="button">Export cleaned CSV</button>
+            <button id="export-receipt" class="button button-secondary" type="button">Download receipt</button>
+            <button id="print-receipt" class="button button-secondary" type="button">Print / save PDF</button>
+            <button id="archive-receipt" class="button button-secondary" type="button" hidden>Save to Proof Kit</button>
+          </div>
+          <p class="fine-print">This checks file consistency only. It is not financial, accounting, or tax advice.</p>
+        </section>
+      </div>
+
+      <section class="proof-kit" id="proof-kit" aria-labelledby="proof-title">
+        <div>
+          <p class="eyebrow">Optional one-time unlock</p>
+          <h2 id="proof-title">Proof Kit keeps the paper trail.</h2>
+          <p>The free checker always includes duplicate detection, balance checks, cleaned CSV, receipt export, and draft backups. Proof Kit adds a local 50-receipt index for recurring monthly work.</p>
+          <p class="price"><strong>$12 once</strong> · no subscription · checkout and refunds handled by Sociobot/Dodo</p>
+        </div>
+        <div class="license-panel">
+          <div id="license-locked">
+            <a id="buy-link" class="button" href="https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout">Buy Proof Kit</a>
+            <details><summary>Have a license?</summary><form id="license-form"><label>Paste license token<input id="license-token" type="text" autocomplete="off" spellcheck="false" required /></label><button class="button button-secondary" type="submit">Verify license</button></form></details>
+          </div>
+          <div id="license-unlocked" hidden><p class="unlocked-mark"><span aria-hidden="true">✓</span> Proof Kit unlocked</p><p>Receipt snapshots stay in this browser. Export individual receipts for durable backup.</p></div>
+          <p id="license-status" class="fine-print" role="status"></p>
+        </div>
+        <div id="receipt-archive" class="receipt-archive" hidden><h3>Local receipt index</h3><ol id="archive-list"></ol></div>
+      </section>
+    </main>
+
+    <footer>
+      <p><strong>Ledger Import Check</strong> is a neutral checkpoint before your ledger. No budgeting advice. No bank login.</p>
+      <nav aria-label="Legal"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/B-Divyesh/sf-offline-ledger-import">Source</a></nav>
+      <p class="fine-print">Hero artwork generated for this product with the factory image model. © 2026 Sociobot.</p>
+    </footer>
+
+    <div id="update-toast" class="toast" role="status" hidden><span>A fresh version is ready.</span><button id="update-button" type="button">Update now</button></div>
+  </body>
+</html>

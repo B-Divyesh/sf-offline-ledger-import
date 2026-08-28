@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://offline-ledger-import.sociobot.in/sitemap.xml

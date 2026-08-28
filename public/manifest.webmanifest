@@ -1,0 +1,15 @@
+{
+  "name": "Ledger Import Check",
+  "short_name": "Ledger Check",
+  "description": "Check bank CSV duplicates and balances without uploading your data.",
+  "start_url": "/?source=installed&v=1",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f2e8d5",
+  "theme_color": "#176b52",
+  "icons": [
+    {"src":"/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"/icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ]
+}
