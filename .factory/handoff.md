@@ -46,4 +46,4 @@ Observed for this repair:
 
 ## Deployment
 
-Deploy `dist/` with `/opt/fleet/lib/deploy-static.sh offline-ledger-import dist`. The static configuration is included in the deploy root and is required for the security, cache, manifest, and 404 behavior above. Post-deploy verification should run `/opt/fleet/lib/verify-url.sh https://offline-ledger-import.sociobot.in/ <evidence-dir>` and check `/demo`, `/missing-route`, headers, and offline reload.
+Production deployment and live verification are recorded after the final deploy commit. The static configuration is included in the deploy root and is required for the security, cache, manifest, and 404 behavior above.
