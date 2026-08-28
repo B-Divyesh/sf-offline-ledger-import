@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 
 async function readStore(page: import('@playwright/test').Page, name: string, key: string): Promise<unknown> {
   return page.evaluate(async ({ name, key }) => {
@@ -247,6 +247,9 @@ test('the normal workflow makes no analytics or tracking requests @claim:no-anal
   await receiptDownload;
   expect(requests.some((path) => /analytics|track|collect|telemetry|pixel/i.test(path))).toBe(false);
   expect(requests.every((path) => path === '/' || path === '/demo' || path === '/sw.js' || path === '/manifest.webmanifest' || path === '/offline.html' || path.startsWith('/assets/') || path.startsWith('/src/') || path.startsWith('/node_modules/'))).toBe(true);
+  const assetFiles = await readdir('dist/assets');
+  const builtText = (await Promise.all(['dist/index.html', ...assetFiles.filter((file) => file.endsWith('.js')).map((file) => `dist/assets/${file}`)].map((file) => readFile(file, 'utf8')))).join('\n');
+  expect(builtText).not.toMatch(/google-analytics|googletagmanager|segment\.com|sentry\.io|\/analytics|\/collect|\/telemetry/i);
 });
 
 test('license verification sends only its dummy token to Sociobot billing @claim:license-verification-network', async ({ page }) => {
