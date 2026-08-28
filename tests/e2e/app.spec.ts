@@ -47,6 +47,13 @@ async function openDemoAndCheck(page: import('@playwright/test').Page): Promise<
   await expect(page.getByText('The balances do not agree yet.')).toBeVisible();
 }
 
+async function settleLayout(page: import('@playwright/test').Page): Promise<void> {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  });
+}
+
 test('demo keeps production IndexedDB and license keys byte-for-byte unchanged @claim:demo-isolation', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {
@@ -531,6 +538,7 @@ test('demo banner and sample evidence stay in the first mobile and desktop viewp
 test('all product controls meet 44px touch targets at 390px @regression:touch-targets', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile');
   await page.goto('/demo');
+  await settleLayout(page);
   const undersized = await page.locator('a, button, summary, label[for]').evaluateAll((items) => items.filter((item) => {
     const box = item.getBoundingClientRect(); return box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44);
   }).map((item) => `${item.tagName}:${item.textContent?.trim()}`));
@@ -541,6 +549,7 @@ test('legal and error routes keep every visible target at 44px on mobile @regres
   test.skip(testInfo.project.name !== 'mobile');
   for (const route of ['/privacy/', '/terms/', '/404/']) {
     await page.goto(route);
+    await settleLayout(page);
     const undersized = await page.locator('a, button, summary, label[for]').evaluateAll((items) => items.filter((item) => {
       const box = item.getBoundingClientRect(); return box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44);
     }).map((item) => `${item.tagName}:${item.textContent?.trim()}`));
