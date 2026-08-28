@@ -5,7 +5,10 @@ import { join, relative } from 'node:path';
 async function filesIn(directory) {
   const output = [];
   for (const name of await readdir(directory)) {
-    if (name === 'sw-template.js' || name === 'sw.js' || name.endsWith('.map')) continue;
+    // Azure Static Web Apps consumes its deployment policy and does not serve
+    // it. Including that file makes cache.addAll reject on the live host and
+    // prevents the service worker from installing at all.
+    if (name === 'sw-template.js' || name === 'sw.js' || name === 'staticwebapp.config.json' || name.endsWith('.map')) continue;
     const full = join(directory, name);
     const info = await stat(full);
     if (info.isDirectory()) output.push(...await filesIn(full));

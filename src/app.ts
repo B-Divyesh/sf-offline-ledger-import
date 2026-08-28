@@ -451,12 +451,16 @@ $('#install-button').addEventListener('click', async () => {
 
 async function registerServiceWorker(): Promise<void> {
   if (!('serviceWorker' in navigator) || import.meta.env.DEV) return;
-  const hadController = Boolean(navigator.serviceWorker.controller);
-  const registration = await navigator.serviceWorker.register('/sw.js');
-  listenForServiceWorkerUpdate(registration, () => Boolean(navigator.serviceWorker.controller), () => show($('#update-toast')));
-  $('#update-button').addEventListener('click', () => { registration.waiting?.postMessage('SKIP_WAITING'); });
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !refreshing) { refreshing = true; location.reload(); } });
+  try {
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    const registration = await navigator.serviceWorker.register('/sw.js');
+    listenForServiceWorkerUpdate(registration, () => Boolean(navigator.serviceWorker.controller), () => show($('#update-toast')));
+    $('#update-button').addEventListener('click', () => { registration.waiting?.postMessage('SKIP_WAITING'); });
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !refreshing) { refreshing = true; location.reload(); } });
+  } catch {
+    show($('#pwa-error'));
+  }
 }
 
 async function initialize(): Promise<void> {
@@ -480,7 +484,7 @@ async function initialize(): Promise<void> {
     try { await restoreDraft(draft); $('#file-status').insertAdjacentHTML('beforeend', ' · <strong>restored from this browser</strong>'); }
     catch { /* leave the clean empty state */ }
   } else if (demoMode) await loadSample();
-  await registerServiceWorker().catch(() => undefined);
+  await registerServiceWorker();
 }
 
 void initialize();

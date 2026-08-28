@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFile } from 'node:fs/promises';
 
 async function openDemoAndCheck(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/demo');
@@ -70,6 +71,55 @@ test('demo draft recovers after a refresh from its isolated store @claim:draft-r
   await expect(page.getByText('restored from this browser')).toBeVisible();
 });
 
+test('imports comma, tab, and semicolon statements through the demo @claim:delimited-import', async ({ page }) => {
+  await page.goto('/demo');
+  const fixtures = [
+    { name: 'comma.csv', delimiter: ',', text: 'Date,Description,Amount\n2026-03-01,Invoice,10.00' },
+    { name: 'tab.tsv', delimiter: 'tab', text: 'Date\tDescription\tAmount\n2026-03-01\tInvoice\t10.00' },
+    { name: 'semicolon.csv', delimiter: ';', text: 'Date;Description;Amount\n2026-03-01;Invoice;10.00' }
+  ];
+
+  for (const fixture of fixtures) {
+    await page.locator('#csv-file').setInputFiles({
+      name: fixture.name,
+      mimeType: 'text/csv',
+      buffer: Buffer.from(fixture.text)
+    });
+    await expect(page.locator('#file-status')).toContainText(fixture.name);
+    await expect(page.locator('#file-status')).toContainText(`1 rows · 3 columns · delimiter ${fixture.delimiter}`);
+    await page.getByLabel('Opening balance').fill('0');
+    await page.getByLabel('Closing balance').fill('10');
+    await page.getByRole('button', { name: /Run balance check/ }).click();
+    await expect(page.getByText('Balances agree. This track plays clean.')).toBeVisible();
+  }
+});
+
+test('exports and restores the active draft as JSON @claim:json-draft-backup', async ({ page }) => {
+  await page.goto('/demo');
+  await expect(page.getByText('example-march-2026.csv')).toBeVisible();
+
+  const backupDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download draft backup' }).click();
+  const download = await backupDownload;
+  expect(download.suggestedFilename()).toBe('example-march-2026-draft.json');
+  const backupPath = await download.path();
+  expect(backupPath).not.toBeNull();
+  const backup = JSON.parse(await readFile(backupPath as string, 'utf8')) as { version: number; filename: string; csvText: string };
+  expect(backup).toMatchObject({ version: 1, filename: 'example-march-2026.csv' });
+  expect(backup.csvText).toContain('Client invoice');
+
+  await page.locator('#csv-file').setInputFiles({
+    name: 'replacement.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Date,Description,Amount\n2026-04-01,Replacement,2.00')
+  });
+  await expect(page.locator('#file-status')).toContainText('replacement.csv');
+  await page.locator('#backup-file').setInputFiles(backupPath as string);
+  await expect(page.locator('#file-status')).toContainText('example-march-2026.csv');
+  await expect(page.getByLabel('Opening balance')).toHaveValue('1200.00');
+  await expect(page.getByText('The balances do not agree yet.')).toBeVisible();
+});
+
 test('demo processing makes no request outside the product origin @claim:local-processing', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
@@ -126,8 +176,14 @@ test('example completes the workflow and exports both evidence files', async ({ 
   expect(consoleErrors).toEqual([]);
 });
 
-test('has no serious accessibility violations', async ({ page }) => {
+test('has no serious accessibility violations on the landing screen', async ({ page }) => {
   await page.goto('/');
+  const results = await new AxeBuilder({ page: page as never }).analyze();
+  expect(results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''))).toEqual([]);
+});
+
+test('has no serious accessibility violations in the checked result @regression:result-contrast', async ({ page }) => {
+  await openDemoAndCheck(page);
   const results = await new AxeBuilder({ page: page as never }).analyze();
   expect(results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''))).toEqual([]);
 });
@@ -149,6 +205,25 @@ test('reopens the app shell while offline', async ({ page, context }) => {
   await page.reload();
   await expect(page.getByRole('heading', { name: /Check bank CSVs/ })).toBeVisible();
   await expect(page.getByText(/Offline mode/)).toBeVisible();
+});
+
+test('service worker installs when deployment metadata is unavailable @regression:sw-deployed-host', async ({ page, request }) => {
+  test.skip(test.info().project.name !== 'chromium');
+  expect((await request.get('/staticwebapp.config.json')).status()).toBe(404);
+  await page.goto('/demo');
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length)).toBe(1);
+});
+
+test('shows a recovery message when offline setup fails @regression:sw-registration-error', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator.serviceWorker, 'register', {
+      configurable: true,
+      value: () => Promise.reject(new Error('simulated registration failure'))
+    });
+  });
+  await page.goto('/demo');
+  await expect(page.getByText('Offline setup did not finish. Reload this page while online to try again.')).toBeVisible();
 });
 
 test('the demo remains usable after its first visit while offline @claim:offline-reload', async ({ page, context }) => {

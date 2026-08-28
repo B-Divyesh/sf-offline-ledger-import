@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from 'vitest';
 
+test('deployment metadata is never added to the service-worker precache @regression:sw-deploy-precache', async () => {
+  const injector = await readFile('scripts/inject-sw.mjs', 'utf8');
+  expect(injector).toContain("name === 'staticwebapp.config.json'");
+});
+
 test('static host policy supplies security headers, immutable assets, manifest MIME, and a real 404 override @regression:static-policy', async () => {
   const config = JSON.parse(await readFile('staticwebapp.config.json', 'utf8')) as {
     globalHeaders: Record<string, string>;
