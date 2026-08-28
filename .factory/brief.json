@@ -1,0 +1,10 @@
+{
+  "slug": "offline-ledger-import",
+  "title": "Ledger Import Check",
+  "artifact_class": "pwa-offline",
+  "user": "A privacy-sensitive household or freelancer who keeps finances locally and needs to import a bank CSV, detect duplicates, and reconcile an opening/closing balance without giving a budgeting app account access.",
+  "smallest_useful_product": "Offline PWA that maps a bank CSV, fingerprints potential duplicates, checks running balances against supplied opening/closing values, flags unexplained gaps, and exports cleaned CSV plus a reconciliation receipt.",
+  "success_measure": "On a seeded 12-month statement corpus, the tool detects 100% of injected duplicate/missing transactions and users reconcile a monthly import in under 10 minutes.",
+  "monetization": "one-time",
+  "constraints": "No server upload or credentials; disclose browser-storage limits; never offer financial advice or tax calculations."
+}

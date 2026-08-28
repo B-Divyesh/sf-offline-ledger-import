@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ledger Import Check cassette mark">
+  <rect width="512" height="512" rx="92" fill="#176b52"/>
+  <path fill="#fff9ed" d="M76 123h360v266H76z"/>
+  <path fill="#1d1b19" d="M105 154h302v157H105z"/>
+  <circle cx="179" cy="231" r="42" fill="#fff9ed"/><circle cx="333" cy="231" r="42" fill="#fff9ed"/>
+  <circle cx="179" cy="231" r="18" fill="#1d1b19"/><circle cx="333" cy="231" r="18" fill="#1d1b19"/>
+  <path d="m143 349 23 23 45-49" fill="none" stroke="#a63d2f" stroke-width="22" stroke-linecap="square"/>
+  <path fill="#1d1b19" d="M241 337h138v20H241z"/>
+</svg>
