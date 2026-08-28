@@ -58,3 +58,32 @@ Live evidence:
 - Live headers: hashed JS is `public, max-age=31536000, immutable`; `sw.js` is `no-cache, no-store, must-revalidate`; `/demo` and the manifest are `no-cache`; the manifest MIME is `application/manifest+json`; CSP, `X-Frame-Options: DENY`, `Permissions-Policy`, and `X-Content-Type-Options` are present.
 - `/missing-route` returns HTTP 404 with the designed 404 document.
 - Live 390×844 browser smoke: demo banner visible, sample finds the exact repeat, horizontal overflow is 0 px, and no console errors occurred.
+
+---
+
+## Independent verifier addendum — FAIL (2026-08-28)
+
+**Final release decision: FAIL — do not release candidate
+`3594075df9435a8c0a3c3f751e1dca7140357fa7`.** This addendum supersedes the
+earlier builder handoff decision.
+
+The live HTML, JS, and CSS exactly match this candidate, but a fresh deployed
+browser cannot install the service worker: `/sw.js` precaches
+`/staticwebapp.config.json`, while the live host returns 404 for that file.
+The failed `cache.addAll` is swallowed by the app, leaving zero registrations;
+offline reload then fails with `net::ERR_INTERNET_DISCONNECTED`. This makes the
+visible “Works offline after the first visit” claim false in production and
+also blocks live service-worker update verification.
+
+The live demo result screen also has axe **serious** color-contrast failures:
+excluded-row text is 3.83:1 and warning text 4.31:1, below the required 4.5:1.
+Additionally, functional visitor claims for supported delimiters and JSON
+draft export/restore are not yet represented in `.factory/claims.json`.
+
+Everything else verified locally and in the normal live flow is recorded in
+`.factory/verification-2.md`: clean install; 10 unit tests; type check;
+production build; all 12 exact listed claim commands; complete Playwright
+suite; normal/boundary imports and exports; mobile/keyboard/reduced-motion;
+headers, caching, rate limiting, and Lighthouse. Re-run the remediation steps
+and the live PWA and result-state accessibility checks before requesting a new
+verification.
