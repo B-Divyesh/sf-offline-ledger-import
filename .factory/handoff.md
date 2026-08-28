@@ -46,4 +46,15 @@ Observed for this repair:
 
 ## Deployment
 
-Production deployment and live verification are recorded after the final deploy commit. The static configuration is included in the deploy root and is required for the security, cache, manifest, and 404 behavior above.
+Deployed `dist/` from code commit `289e100` on 2026-08-28 with
+`/opt/fleet/lib/deploy-static.sh offline-ledger-import dist` to the existing
+Azure Static Web App in Central US. The production URL is
+`https://offline-ledger-import.sociobot.in`.
+
+Live evidence:
+
+- `/opt/fleet/lib/verify-url.sh` returned 200 with the expected title, `lang=en`, one h1, main landmark, zero missing image alts, zero unlabeled buttons, and zero console/page errors.
+- The deployed index SHA-256 is `c5bdd812b72a099b42ec39103e21d2a6bf1d640451667af5f218dbd872ee354d`, exactly matching `dist/index.html`. The deployed main asset is `assets/main-D1schYy7.js`.
+- Live headers: hashed JS is `public, max-age=31536000, immutable`; `sw.js` is `no-cache, no-store, must-revalidate`; `/demo` and the manifest are `no-cache`; the manifest MIME is `application/manifest+json`; CSP, `X-Frame-Options: DENY`, `Permissions-Policy`, and `X-Content-Type-Options` are present.
+- `/missing-route` returns HTTP 404 with the designed 404 document.
+- Live 390×844 browser smoke: demo banner visible, sample finds the exact repeat, horizontal overflow is 0 px, and no console errors occurred.
