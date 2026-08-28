@@ -367,7 +367,11 @@ async function renderLicense(): Promise<void> {
   show($('#archive-receipt'), proofUnlocked && Boolean(result));
   if (proofUnlocked) {
     const receipts = await loadReceipts().catch(() => []);
-    $('#archive-list').innerHTML = receipts.length ? receipts.map((item) => `<li><strong>${escapeHtml(item.statement)}</strong> · <time datetime="${escapeHtml(item.checkedAt)}">${escapeHtml(new Date(item.checkedAt).toLocaleDateString())}</time><br><span>${escapeHtml(item.summary)}</span></li>`).join('') : '<li>No saved receipts yet. Run a check, then choose “Save to Proof Kit.”</li>';
+    $('#archive-list').innerHTML = receipts.length ? receipts.map((item) => `<li><strong>${escapeHtml(item.statement)}</strong> · <time datetime="${escapeHtml(item.checkedAt)}">${escapeHtml(new Date(item.checkedAt).toLocaleDateString())}</time><br><span>${escapeHtml(item.summary)}</span><br><button class="text-button saved-receipt-download" type="button" data-receipt-id="${escapeHtml(item.id)}">Download saved receipt</button></li>`).join('') : '<li>No saved receipts yet. Run a check, then choose “Save to Proof Kit.”</li>';
+    document.querySelectorAll<HTMLButtonElement>('.saved-receipt-download').forEach((button) => button.addEventListener('click', () => {
+      const saved = receipts.find((item) => item.id === button.dataset.receiptId);
+      if (saved) download(saved.filename, saved.receiptText, 'text/plain;charset=utf-8');
+    }));
   }
 }
 
@@ -392,7 +396,7 @@ async function loadSample(): Promise<void> {
   await loadCsv(sampleCsv, 'example-march-2026.csv', undefined, !demoMode);
   if (demoMode) runCheck(false);
 }
-$('#sample-button').addEventListener('click', () => { location.assign('/demo'); });
+$('#sample-button').addEventListener('click', () => { location.assign('/demo?demo=1'); });
 $('#reset-demo').addEventListener('click', async () => {
   await clearDraft();
   await loadSample();
@@ -428,7 +432,15 @@ $('#archive-receipt').addEventListener('click', async () => {
   if (!result || !proofUnlocked) return;
   await sourceHashPromise;
   const statement = ($('#statement-name') as HTMLInputElement).value.trim() || filename;
-  await saveReceipt({ id: `${sourceHash.slice(0, 16)}-${result.closing}`, statement, checkedAt: new Date().toISOString(), summary: result.reconciled ? 'Balances agree' : `Review ${money(result.closingDifference)} difference` });
+  const receiptFilename = `${fileSafe(statement)}-receipt.txt`;
+  await saveReceipt({
+    id: `${sourceHash.slice(0, 16)}-${result.closing}`,
+    statement,
+    checkedAt: new Date().toISOString(),
+    summary: result.reconciled ? 'Balances agree' : `Review ${money(result.closingDifference)} difference`,
+    filename: receiptFilename,
+    receiptText: receiptText()
+  });
   $('#license-status').textContent = 'Receipt snapshot saved locally.'; await renderLicense();
 });
 

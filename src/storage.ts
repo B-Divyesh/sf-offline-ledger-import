@@ -37,7 +37,15 @@ export const saveDraft = (draft: Draft) => useStore('readwrite', (store) => stor
 export const loadDraft = () => useStore<Draft | undefined>('readonly', (store) => store.get('current'));
 export const clearDraft = () => useStore('readwrite', (store) => store.delete('current'));
 
-export interface ReceiptRecord { id: string; statement: string; checkedAt: string; summary: string; }
+/** A saved Proof Kit entry is self-contained after the active draft changes. */
+export interface ReceiptRecord {
+  id: string;
+  statement: string;
+  checkedAt: string;
+  summary: string;
+  filename: string;
+  receiptText: string;
+}
 
 export async function saveReceipt(record: ReceiptRecord): Promise<void> {
   const existing = await loadReceipts();

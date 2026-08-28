@@ -2,6 +2,23 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile } from 'node:fs/promises';
 
+async function readStore(page: import('@playwright/test').Page, name: string, key: string): Promise<unknown> {
+  return page.evaluate(async ({ name, key }) => {
+    const request = indexedDB.open(name, 1);
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const value = await new Promise<unknown>((resolve, reject) => {
+      const read = database.transaction('local-data').objectStore('local-data').get(key);
+      read.onsuccess = () => resolve(read.result);
+      read.onerror = () => reject(read.error);
+    });
+    database.close();
+    return value;
+  }, { name, key });
+}
+
 async function openDemoAndCheck(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/demo');
   await expect(page.getByLabel('Demo controls')).toBeVisible();
@@ -24,7 +41,8 @@ test('demo keeps production IndexedDB and license keys byte-for-byte unchanged @
       request.onerror = () => reject(request.error);
     });
   });
-  await page.goto('/demo');
+  const realDraft = await readStore(page, 'ledger-import-check', 'current');
+  await page.goto('/demo?demo=1');
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
   await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
   await expect(page.getByText('real.csv')).toHaveCount(0);
@@ -34,6 +52,8 @@ test('demo keeps production IndexedDB and license keys byte-for-byte unchanged @
   expect(names).toContain('ledger-import-check');
   expect(names).toContain('demo:ledger-import-check');
   expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(before);
+  expect(await readStore(page, 'ledger-import-check', 'current')).toEqual(realDraft);
+  expect(await readStore(page, 'demo:ledger-import-check', 'current')).not.toEqual(realDraft);
   await page.getByRole('link', { name: 'Start for real' }).click();
   await expect(page).toHaveURL(/\/$/);
   await page.goto('/demo');
@@ -163,13 +183,30 @@ test('a cached Proof Kit license can save a local receipt index entry @claim:rec
     localStorage.setItem('demo:sb_license:offline-ledger-import:verdict', JSON.stringify({ valid: true, checkedAt: Date.now(), reason: 'ok' }));
   });
   await openDemoAndCheck(page);
+  await expect(page.locator('#archive-list li')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Save to Proof Kit' })).toBeVisible();
   await page.getByRole('button', { name: 'Save to Proof Kit' }).click();
   await expect(page.getByText('Receipt snapshot saved locally.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Local receipt index' })).toBeVisible();
+  await expect(page.locator('#archive-list li')).toHaveCount(1);
+  await expect(page.locator('#archive-list')).toContainText('Example current account · March 2026');
+  await expect(page.locator('#archive-list')).toContainText('Review -$30.00 difference');
+  const saved = await readStore(page, 'demo:ledger-import-check', 'receipts') as Array<{ receiptText: string }>;
+  expect(saved).toHaveLength(1);
+  expect(saved.at(0)?.receiptText).toContain('Unexplained difference: -$30.00');
+  await page.reload();
+  await expect(page.locator('#archive-list')).toContainText('Example current account · March 2026');
+  const savedDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download saved receipt' }).click();
+  const savedReceipt = await savedDownload;
+  expect(await readFile((await savedReceipt.path()) as string, 'utf8')).toContain('Unexplained difference: -$30.00');
 });
 
-test('Proof Kit states its one-time price and Sociobot checkout address @claim:proof-kit-price', async ({ page }) => {
+test('Proof Kit states the recorded one-time Sociobot/Dodo checkout contract @claim:proof-kit-price', async ({ page }) => {
+  const contract = JSON.parse(await readFile('tests/fixtures/checkout-contract.json', 'utf8')) as Record<string, unknown>;
+  expect(contract).toMatchObject({ product: 'offline-ledger-import', currency: 'USD', amount_cents: 1200, billing_type: 'one_time', merchant_of_record: 'Sociobot/Dodo' });
+  expect(contract.refunds).toMatch(/refund/i);
+  expect(contract.checkout_path).toBe('/api/v1/products/offline-ledger-import/checkout');
   await page.goto('/');
   await expect(page.getByText('$12 one-time')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Buy Proof Kit' })).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout');
@@ -180,9 +217,12 @@ test('Proof Kit states its one-time price and Sociobot checkout address @claim:p
 
 test('Erase local draft removes the active bank CSV @claim:erase-draft', async ({ page }) => {
   await page.goto('/demo');
+  await page.locator('#csv-file').setInputFiles({ name: 'erase-me.csv', mimeType: 'text/csv', buffer: Buffer.from('Date,Description,Amount\n2026-03-01,Erase me,10.00') });
+  await expect(page.locator('#file-status')).toContainText('erase-me.csv');
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Erase local draft' }).click();
   await expect(page.locator('#file-status')).toBeHidden();
+  expect(await readStore(page, 'demo:ledger-import-check', 'current')).toBeUndefined();
   await page.reload();
   await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
 });
@@ -193,6 +233,37 @@ test('the published app loads scripts, styles, and fonts only from this site @cl
   await page.goto('/');
   await expect(page.locator('script[src], link[rel="stylesheet"]')).toHaveCount(2);
   expect(requests.every((url) => new URL(url).origin === 'http://127.0.0.1:4173')).toBe(true);
+});
+
+test('the normal workflow makes no analytics or tracking requests @claim:no-analytics', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(new URL(request.url()).pathname));
+  await openDemoAndCheck(page);
+  const csvDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export cleaned CSV' }).click();
+  await csvDownload;
+  const receiptDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download receipt' }).click();
+  await receiptDownload;
+  expect(requests.some((path) => /analytics|track|collect|telemetry|pixel/i.test(path))).toBe(false);
+  expect(requests.every((path) => path === '/' || path === '/demo' || path === '/sw.js' || path === '/manifest.webmanifest' || path === '/offline.html' || path.startsWith('/assets/') || path.startsWith('/src/') || path.startsWith('/node_modules/'))).toBe(true);
+});
+
+test('license verification sends only its dummy token to Sociobot billing @claim:license-verification-network', async ({ page }) => {
+  const seen: { url: string; postData: string | null }[] = [];
+  await page.route('https://api.sociobot.in/**', async (route) => {
+    seen.push({ url: route.request().url(), postData: route.request().postData() });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ valid: false, reason: 'invalid' }) });
+  });
+  await page.goto('/');
+  await page.locator('#license-locked summary').click();
+  await page.getByLabel('Paste license token').fill('dummy-license-for-network-test');
+  await page.getByRole('button', { name: 'Verify license' }).click();
+  await expect(page.getByText('That license is not active for this product.')).toBeVisible();
+  expect(seen).toHaveLength(1);
+  const request = seen.at(0);
+  expect(request?.url).toBe('https://api.sociobot.in/api/v1/products/offline-ledger-import/verify?license=dummy-license-for-network-test');
+  expect(request?.postData).toBeNull();
 });
 
 test('example completes the workflow and exports both evidence files', async ({ page }) => {
@@ -279,12 +350,12 @@ test('the landing first read has a one-click sample action and plain job stateme
   await page.goto('/');
   await expect(page).toHaveTitle('Ledger Import Check — check bank CSVs');
   await expect(page.getByRole('heading', { level: 1, name: 'Check bank CSVs before importing' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Try it with sample data/ })).toHaveAttribute('href', '/demo');
+  await expect(page.getByRole('link', { name: /Try it with sample data/ })).toHaveAttribute('href', '/demo?demo=1');
   await expect(page.getByText('For households and freelancers: find repeats and balance gaps before importing.')).toBeVisible();
 });
 
 test('demo banner and sample evidence stay in the first mobile and desktop viewport @claim:demo-first-viewport', async ({ page }) => {
-  await page.goto('/demo');
+  await page.goto('/demo?demo=1');
   const viewport = page.viewportSize()!;
   for (const name of ['Demo controls', 'example-march-2026.csv', '1 exact repeat', '1 balance gap', '-$30.00 difference']) {
     const box = await (name === 'Demo controls' ? page.getByLabel(name) : page.getByText(name, { exact: true }).first()).boundingBox();
@@ -305,6 +376,7 @@ test('all product controls meet 44px touch targets at 390px @regression:touch-ta
 
 test('skip link moves keyboard focus to the main landmark @regression:skip-link', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   await page.getByRole('link', { name: 'Skip to ledger check' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('main')).toBeFocused();

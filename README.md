@@ -2,7 +2,7 @@
 
 Check bank CSVs before importing. It is for households and freelancers who want to find repeats and balance gaps locally.
 
-The demo includes a March 2026 bank CSV. It shows one repeat, one balance gap, and a $30.00 difference. It is not budgeting software, financial advice, or a bank connection.
+The demo includes a checked March 2026 bank CSV. It shows one repeat, one balance gap, and a $30.00 difference. It is not budgeting software, financial advice, or a bank connection.
 
 Live: <https://offline-ledger-import.sociobot.in>
 
@@ -30,7 +30,7 @@ npm run build
 npm run test:e2e
 ```
 
-The full claim contract is in [`.factory/claims.json`](.factory/claims.json). Every claim command starts from `/demo`. Playwright is pinned to 1.58.2.
+The full claim contract is in [`.factory/claims.json`](.factory/claims.json). Workflow claim tests use `/demo`; landing and legal-copy tests use their published routes. Playwright is pinned to 1.58.2.
 
 Deploy `dist/` at the domain root. The factory registers the paid product separately.
 

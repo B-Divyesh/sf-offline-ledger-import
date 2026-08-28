@@ -28,7 +28,7 @@
     <header class="site-header">
       <a class="wordmark" href="/" aria-label="Ledger Import Check home"><span class="wordmark-mark" aria-hidden="true">● ◼ ●</span><span>Ledger Import Check</span></a>
       <nav aria-label="Site">
-        <a href="/demo">Demo</a>
+        <a href="/demo?demo=1">Demo</a>
         <a href="#how-it-works">Method</a>
         <a href="#proof-kit">Proof Kit</a>
         <a href="/privacy/">Privacy</a>
@@ -48,7 +48,7 @@
           <p class="eyebrow">Private bank CSV checks</p>
           <h1 id="hero-title">Check bank CSVs before importing</h1>
           <p class="lead">For households and freelancers: find repeats and balance gaps before importing.</p>
-          <div class="hero-actions"><a class="button" href="/demo">Try it with sample data <span aria-hidden="true">→</span></a><span>Loads a sample statement in a separate demo.</span></div>
+          <div class="hero-actions"><a class="button" href="/demo?demo=1">Try it with sample data <span aria-hidden="true">→</span></a><span>Loads a checked sample bank CSV in a separate demo.</span></div>
           <ul class="trust-strip" aria-label="Privacy promises">
             <li>Works offline after the first visit</li><li>No sign-in</li><li>Export cleaned CSV and receipt</li>
           </ul>
@@ -68,7 +68,7 @@
       <div class="workbench" id="how-it-works">
         <ol class="stage-rail" aria-label="Import check stages">
           <li id="stage-1" class="active"><span>01</span><strong>Load</strong><small>Choose a statement</small></li>
-          <li id="stage-2"><span>02</span><strong>Map</strong><small>Align the columns</small></li>
+          <li id="stage-2"><span>02</span><strong>Match</strong><small>Match CSV columns</small></li>
           <li id="stage-3"><span>03</span><strong>Check</strong><small>Keep the evidence</small></li>
         </ol>
 
@@ -173,7 +173,7 @@
 
       <section class="proof-kit" id="proof-kit" aria-labelledby="proof-title">
         <div>
-          <p class="eyebrow">Optional one-time unlock</p>
+          <p class="eyebrow">Optional one-time purchase</p>
           <h2 id="proof-title">Save past receipts with Proof Kit</h2>
           <p>The free checker includes repeat checks, balance-gap checks, cleaned CSV, receipt export, and draft backups. Proof Kit adds a local receipt index for recurring monthly work.</p>
           <p class="price"><strong>$12 one-time</strong> · local receipt index</p>
@@ -183,7 +183,7 @@
             <a id="buy-link" class="button" href="https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout">Buy Proof Kit</a>
             <details><summary>Have a license?</summary><form id="license-form"><label>Paste license token<input id="license-token" type="text" autocomplete="off" spellcheck="false" required /></label><button class="button button-secondary" type="submit" aria-label="Verify license">Verify license</button></form></details>
           </div>
-          <div id="license-unlocked" hidden><p class="unlocked-mark"><span aria-hidden="true">✓</span> Proof Kit unlocked</p><p>Receipt snapshots stay in this browser. Export individual receipts for durable backup.</p></div>
+          <div id="license-unlocked" hidden><p class="unlocked-mark"><span aria-hidden="true">✓</span> Proof Kit active</p><p>Saved receipt copies stay in this browser. Download any saved receipt for backup.</p></div>
           <p id="license-status" class="fine-print" role="status"></p>
         </div>
         <div id="receipt-archive" class="receipt-archive" hidden><h3>Local receipt index</h3><ol id="archive-list"></ol></div>

@@ -1,0 +1,9 @@
+{
+  "product": "offline-ledger-import",
+  "currency": "USD",
+  "amount_cents": 1200,
+  "billing_type": "one_time",
+  "merchant_of_record": "Sociobot/Dodo",
+  "refunds": "Sociobot/Dodo handles refunds; a refund revokes the license.",
+  "checkout_path": "/api/v1/products/offline-ledger-import/checkout"
+}
