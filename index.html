@@ -5,33 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#176b52" />
     <meta name="description" content="Check a bank CSV for duplicates and balance gaps without uploading your financial data." />
+    <link rel="canonical" href="https://offline-ledger-import.sociobot.in/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Ledger Import Check — check bank CSVs privately" />
+    <meta property="og:description" content="Find repeats and balance gaps before importing a bank CSV." />
+    <meta property="og:image" content="https://offline-ledger-import.sociobot.in/assets/ledger-tape-960.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ledger Import Check — check bank CSVs privately" />
+    <meta name="twitter:description" content="Find repeats and balance gaps before importing a bank CSV." />
+    <meta name="twitter:image" content="https://offline-ledger-import.sociobot.in/assets/ledger-tape-960.jpg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <title>Ledger Import Check — private bank CSV reconciliation</title>
+    <title>Ledger Import Check — check bank CSVs privately</title>
     <script type="module" src="/src/app.ts"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to ledger check</a>
     <div id="offline-banner" class="network-banner" hidden role="status">Offline mode — your saved draft and every check still work here.</div>
+    <aside id="demo-banner" class="demo-banner" hidden aria-label="Demo controls"><strong>Demo — sample data, nothing is saved</strong><span id="demo-status" role="status"></span><button id="reset-demo" class="text-button" type="button" aria-label="Reset demo">Reset demo</button><a id="start-real" class="text-button" href="/">Start for real</a></aside>
     <header class="site-header">
       <a class="wordmark" href="/" aria-label="Ledger Import Check home"><span class="wordmark-mark" aria-hidden="true">● ◼ ●</span><span>Ledger Import Check</span></a>
       <nav aria-label="Site">
+        <a href="/demo">Demo</a>
         <a href="#how-it-works">Method</a>
         <a href="#proof-kit">Proof Kit</a>
         <a href="/privacy/">Privacy</a>
       </nav>
-      <button id="install-button" class="button button-small button-quiet" type="button" hidden>Install app</button>
+      <button id="install-button" class="button button-small button-quiet" type="button" hidden aria-label="Install app">Install app</button>
     </header>
 
     <main id="main">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow">Private playback for bank CSVs</p>
-          <h1 id="hero-title">Catch the skip before it hits your ledger.</h1>
-          <p class="lead">Map a statement, find repeat transactions, and prove the opening and closing balances agree. Your file stays in this browser—no account connection, no upload.</p>
-          <a class="button" href="#import-track">Check a CSV <span aria-hidden="true">↓</span></a>
+          <p class="eyebrow">Private bank CSV checks</p>
+          <h1 id="hero-title">Check bank CSVs before importing</h1>
+          <p class="lead">For households and freelancers: find repeats and balance gaps before importing.</p>
+          <div class="hero-actions"><a class="button" href="/demo">Try it with sample data <span aria-hidden="true">→</span></a><span>Loads a sample statement in a separate demo.</span></div>
           <ul class="trust-strip" aria-label="Privacy promises">
-            <li>Works offline</li><li>No sign-in</li><li>You own the exports</li>
+            <li>Works offline after the first visit</li><li>No sign-in</li><li>Export cleaned CSV and receipt</li>
           </ul>
         </div>
         <figure class="hero-art">
@@ -66,13 +77,13 @@
               <strong>Choose CSV</strong>
               <span>or drop it on this workbench</span>
             </label>
-            <button id="sample-button" class="text-button" type="button">Try the example statement</button>
+            <button id="sample-button" class="text-button" type="button">Try it with sample data</button>
           </div>
           <div id="file-status" class="file-status" hidden></div>
           <div id="import-error" class="notice notice-danger" role="alert" hidden></div>
           <div class="local-note">
             <span class="stamp" aria-hidden="true">LOCAL</span>
-            <p><strong>Nothing leaves this device.</strong> The draft is kept in browser storage so a refresh does not erase your place. Browser data can be cleared; download a backup for durable safekeeping.</p>
+            <p><strong>Your statement data stays in this browser.</strong> The draft is kept in browser storage so a refresh does not erase your place. Browser data can be cleared; download a backup for durable safekeeping.</p>
           </div>
           <div class="inline-actions">
             <input class="visually-hidden" id="backup-file" type="file" accept="application/json,.json" />
@@ -156,13 +167,13 @@
         <div>
           <p class="eyebrow">Optional one-time unlock</p>
           <h2 id="proof-title">Proof Kit keeps the paper trail.</h2>
-          <p>The free checker always includes duplicate detection, balance checks, cleaned CSV, receipt export, and draft backups. Proof Kit adds a local 50-receipt index for recurring monthly work.</p>
+          <p>The free checker includes duplicate checks, balance checks, cleaned CSV, receipt export, and draft backups. Proof Kit adds a local receipt index for recurring monthly work.</p>
           <p class="price"><strong>$12 once</strong> · no subscription · checkout and refunds handled by Sociobot/Dodo</p>
         </div>
         <div class="license-panel">
           <div id="license-locked">
             <a id="buy-link" class="button" href="https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout">Buy Proof Kit</a>
-            <details><summary>Have a license?</summary><form id="license-form"><label>Paste license token<input id="license-token" type="text" autocomplete="off" spellcheck="false" required /></label><button class="button button-secondary" type="submit">Verify license</button></form></details>
+            <details><summary>Have a license?</summary><form id="license-form"><label>Paste license token<input id="license-token" type="text" autocomplete="off" spellcheck="false" required /></label><button class="button button-secondary" type="submit" aria-label="Verify license">Verify license</button></form></details>
           </div>
           <div id="license-unlocked" hidden><p class="unlocked-mark"><span aria-hidden="true">✓</span> Proof Kit unlocked</p><p>Receipt snapshots stay in this browser. Export individual receipts for durable backup.</p></div>
           <p id="license-status" class="fine-print" role="status"></p>
@@ -177,6 +188,6 @@
       <p class="fine-print">Hero artwork generated for this product with the factory image model. © 2026 Sociobot.</p>
     </footer>
 
-    <div id="update-toast" class="toast" role="status" hidden><span>A fresh version is ready.</span><button id="update-button" type="button">Update now</button></div>
+    <div id="update-toast" class="toast" role="status" hidden><span>A fresh version is ready.</span><button id="update-button" type="button" aria-label="Update now">Update now</button></div>
   </body>
 </html>

@@ -1,11 +1,21 @@
 import type { Draft } from './types';
 
-const DB_NAME = 'ledger-import-check';
+const REAL_DB_NAME = 'ledger-import-check';
 const STORE = 'local-data';
+let namespace = '';
+
+/** Keep sample work physically separate from a visitor's own browser data. */
+export function setStorageNamespace(nextNamespace: string): void {
+  namespace = nextNamespace;
+}
+
+function databaseName(): string {
+  return `${namespace}${REAL_DB_NAME}`;
+}
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(databaseName(), 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);

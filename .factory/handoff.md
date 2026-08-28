@@ -1,33 +1,18 @@
-# Ledger Import Check — build handoff
+# Ledger Import Check — repair handoff
 
-> ## Independent verification status: **FAIL — do not release**
->
-> Verified 2026-08-28 against commit
-> `b03af75fafcc6b126e13547def6b96abe372240b` and
-> `https://offline-ledger-import.sociobot.in`. The deployment exactly matches
-> the candidate, but it fails the mandatory claims contract (missing
-> `.factory/claims.json`), cold first-read/sample-demo gate, and demo data
-> isolation requirement. A service-worker update also reaches `waiting`
-> without exposing the update toast. See `.factory/verification.md` for exact
-> commands, evidence, successful checks, severity-ranked defects, and the
-> observed rate-limit threshold. This supersedes the release implication of
-> the build verification below.
+Work order: `offline-ledger-import-repair-1`
 
-Work order: `offline-ledger-import-build-1`
-
-Completed: 2026-08-28
-
+Repair base: verifier report commit `572c3e14f6350f946e305dc9d03bd628d78e36da`
 Deploy class: static PWA; publish `dist/`
 
-## What shipped
+## Release-blocking repairs
 
-- A complete local CSV workflow: drag/choose/sample, delimiter parsing, heading suggestions, signed or split amount mapping, explicit date order, statement metadata, opening/closing balances, and a three-row source preview.
-- Chronological reconciliation with stable source IDs, exact fingerprints, nearby-repeat candidates, automatic exact-repeat exclusion, user-controlled inclusion, running-balance gap-start localization, and end-balance difference reporting.
-- Reviewable responsive transaction evidence with issue filters, cleaned canonical CSV export, SHA-256-linked text receipt, print/PDF path, and JSON draft backup/restore.
-- IndexedDB draft recovery across refresh/tab close, explicit erase confirmation, browser-storage disclosure, and offline operation.
-- Installable PWA with 192/512/maskable icons, deterministic versioned precache, document fallback, cache-first assets, `clientsClaim`, message-driven `skipWaiting`, and an update-available toast.
-- Optional $12 one-time Proof Kit license via the Sociobot checkout/verify contract. Core checking and all exports stay free; the unlock adds a local index of up to 50 receipt snapshots. Returned and pasted licenses are stored under `sb_license:offline-ledger-import`, verified at most daily, and reconciled quietly after offline first paint.
-- Cassette-era zine identity, self-hosted Atkinson Hyperlegible/Courier Prime, original generated hero in AVIF/WebP/JPEG, responsive/mobile and print treatments, reduced-motion fallback, privacy/terms pages, and complete project documentation.
+- Added the required claims contract in `.factory/claims.json`. Every visitor-facing operational claim has one tagged Playwright test against `/demo`; `.factory/demo.md` documents the sample, reset path, and storage boundary.
+- Added a real static `/demo` entry point. It automatically loads the six-row March 2026 sample and keeps all draft and receipt work in the independent IndexedDB database `demo:ledger-import-check`. Normal work remains in `ledger-import-check`; the demo never reads or writes that database. The persistent demo banner has **Reset demo** and **Start for real**.
+- Rewrote the first screen in plain language: **Check bank CSVs before importing**, names households and freelancers, and puts **Try it with sample data** beside an explanation of what happens next.
+- Fixed the update notification by retaining the installing worker reference across its transition to `waiting`; the unit regression reproduces the browser transition that previously hid the update toast.
+- Added static-host policy in `staticwebapp.config.json`: CSP, frame/permission/referrer/content-type protections, immutable hashed assets, no-cache app shell/service worker/manifest, manifest MIME type, and a status-404 rewrite to the designed `/404/index.html`. The build copies the configuration into `dist/`.
+- Added canonical, Open Graph, and Twitter metadata; `/demo` to the sitemap; a designed 404 page; keyboard-focus transfer for the skip link; and explicit labels for controls that are initially hidden.
 
 ## Verification
 
@@ -41,26 +26,24 @@ npm run build
 npm run test:e2e
 ```
 
-Observed locally:
+Observed for this repair:
 
-- `npm test`: 8/8 unit tests passed, including a seeded 12-month corpus with 100% detection of its injected exact duplicate and missing transaction.
+- `npm ci`: completed; `npm audit` reported 0 vulnerabilities.
+- `npm test`: 10/10 passed, including the service-worker waiting-state regression and static-host policy regression.
 - `npx tsc --noEmit`: passed with strict TypeScript.
-- `npm run build`: passed; `dist/index.html` present. Main JS 24.49 KB / 9.59 KB gzip; CSS 17.03 KB / 4.69 KB gzip; runtime WOFF2 fonts 72.97 KB; largest hero 66 KB WebP and 37 KB AVIF.
-- `npm run test:e2e`: 6 passed, 2 intentionally device-inapplicable cases skipped. Covered desktop/mobile example completion, CSV and receipt downloads, no console errors, axe serious/critical scan, 390 px page overflow, and a real offline reload through the service worker.
-- `npm audit`: 0 vulnerabilities, including development dependencies.
-- Lighthouse 12.8.2, local production build, mobile defaults: Performance 99, Accessibility 100, Best Practices 100, SEO 100; FCP 1.4 s, LCP 1.5 s, CLS 0.069, TBT 0 ms.
-- Visual inspection completed at 1440×1000 and 390×844. Focus rings, target sizes, single `<h1>`, landmarks, alt text, contrast, empty/error/offline states, and reduced-motion rules are present.
+- `npm run build`: passed; `dist/index.html`, `dist/demo/index.html`, `dist/404/index.html`, and `dist/staticwebapp.config.json` exist. Initial JS is 25.25 KB (9.85 KB gzip); CSS is 17.57 KB (4.78 KB gzip).
+- `npm run test:e2e`: 34/34 passed across desktop Chromium and 390×844 mobile. It covers the complete sample workflow, exact repeat, balance jump/difference, downloads, draft recovery, IndexedDB isolation, privacy request interception, no sign-in, cached Proof Kit receipt index, keyboard skip link, axe serious/critical scan, no horizontal overflow, and offline reload after service-worker control.
+- Every entry in `.factory/claims.json` is exercised by its stated `@claim:` test. The privacy claim intercepts the complete demo and export flow and permits only the product origin.
+- `/opt/fleet/lib/verify-url.sh http://127.0.0.1:4173/ …`: 200; title present; `lang=en`; one h1; main landmark; 0 images missing alt; 0 unlabeled buttons; 0 console/page errors.
+- Lighthouse 12.8.2 on the local production build: Performance 100, Accessibility 100, Best Practices 100, SEO 100.
 
-## Known limits
+## Known product limits
 
-- Without a bank-provided running-balance column, the tool can prove an end difference but cannot identify the row where an omission began; the UI and receipt say this directly.
-- Ambiguous numeric dates default to month/day/year. Users must select day/month/year when applicable.
-- Browser storage is not a durable backup and is not additionally encrypted by the app; exported backups and device-level encryption are the recovery/security path.
-- Live purchase completion was not exercised because product registration happens later in the factory. The production Sociobot checkout and verification routes are wired without a hard-coded product ID beyond the required slug.
-- This is consistency evidence, not an audit and not financial, accounting, or tax advice.
+- Without a bank running-balance column, the tool can show the end difference but cannot locate the first omitted row.
+- Ambiguous numeric dates require the user to choose the intended order.
+- Browser storage is not a durable backup or extra app-level encryption; export the draft/receipt and use device protection.
+- The paid checkout is wired to Sociobot/Dodo. A factory-registered live purchase is outside this local repair; core checks and exports remain free.
 
-## Factory next steps
+## Deployment
 
-1. Register the one-time product/price and return URL in the Sociobot billing system.
-2. Deploy `dist/` at `https://offline-ledger-import.sociobot.in` with immutable caching for hashed assets and no-cache/revalidation for HTML, `sw.js`, and the manifest.
-3. Smoke-test hosted checkout return, CORS verification, install prompt, and offline reload on an Android device.
+Deploy `dist/` with `/opt/fleet/lib/deploy-static.sh offline-ledger-import dist`. The static configuration is included in the deploy root and is required for the security, cache, manifest, and 404 behavior above. Post-deploy verification should run `/opt/fleet/lib/verify-url.sh https://offline-ledger-import.sociobot.in/ <evidence-dir>` and check `/demo`, `/missing-route`, headers, and offline reload.

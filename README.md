@@ -1,24 +1,18 @@
 # Ledger Import Check
 
-Ledger Import Check is a local-first checkpoint for bank CSV imports. It helps privacy-sensitive households and freelancers map unfamiliar exports, flag exact and nearby repeat transactions, reconcile opening and closing balances, locate running-balance jumps, and export a clean neutral CSV plus a plain-text evidence receipt.
+Check bank CSVs before importing. Ledger Import Check is for privacy-sensitive households and freelancers. The sample demo shows an exact repeated transaction, a running-balance jump, a closing-balance difference, and the cleaned CSV and receipt exports.
 
-It is not a budgeting app, bank connection, audit, tax calculator, or financial adviser. Statement contents never leave the browser.
+It is not a budgeting app, bank connection, audit, tax calculator, or financial adviser. Statement data stays in the browser during the normal checking flow.
 
 Live: <https://offline-ledger-import.sociobot.in>
 
-## Supported statement shapes
+## Try the isolated sample
 
-- Comma, semicolon, or tab-separated text with a header row
-- ISO, month/day/year, or day/month/year dates (ambiguous dates are explicit in mapping)
-- One signed amount column, or separate debit and credit columns
-- Optional running balance; without it the end balance is checked, but a missing row cannot be located
-- Currency symbols, thousands separators, decimal commas, and accounting parentheses
-
-Exact-repeat fingerprints combine the normalized date, description, and amount. A possible repeat is the same normalized description and amount within three days. Exact repeats start excluded but remain visible and can be restored. Every decision immediately recalculates the balance.
+Open [the demo](https://offline-ledger-import.sociobot.in/demo). It starts with a realistic six-row March 2026 statement, has a persistent demo banner, and keeps its draft in `demo:ledger-import-check`, separate from your own `ledger-import-check` browser data. **Reset demo** reloads the sample. **Start for real** returns to a clean normal workspace.
 
 ## Local data and paid unlock
 
-The active draft is stored in IndexedDB and can be exported/restored as JSON. Cleaned CSV and reconciliation receipt exports are always free. The optional $12 one-time Proof Kit license adds a local index of up to 50 receipt snapshots; it uses only the Sociobot hosted checkout and license-verification API. Clearing site data removes the draft, receipt index, and saved license token, so downloaded backups are the durable copy.
+The active draft is stored in IndexedDB and can be exported/restored as JSON. Cleaned CSV and reconciliation receipt exports are always free. The optional $12 one-time Proof Kit license adds a local receipt index; it uses only the Sociobot hosted checkout and license-verification API. Clearing site data removes the draft, receipt index, and saved license token, so downloaded backups are the durable copy.
 
 See [privacy](https://offline-ledger-import.sociobot.in/privacy/) and [terms](https://offline-ledger-import.sociobot.in/terms/).
 
@@ -33,6 +27,8 @@ npm test
 npm run build       # exact deployment build; outputs dist/index.html
 npm run test:e2e    # production browser, mobile, axe, and offline checks
 ```
+
+The full claim contract is in [`.factory/claims.json`](.factory/claims.json). Each claim command runs from the `/demo` sandbox.
 
 Playwright is pinned to 1.58.2. In a fresh environment, install Chromium with `npx playwright install chromium` if it is not already available.
 

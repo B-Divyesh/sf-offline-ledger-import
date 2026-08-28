@@ -1,8 +1,9 @@
 import './styles.css';
 import { escapeCsv, importTransactions, parseCsv, parseMoney, suggestMapping } from './csv';
 import { reconcile } from './reconcile';
-import { clearDraft, loadDraft, loadReceipts, saveDraft, saveReceipt } from './storage';
+import { clearDraft, loadDraft, loadReceipts, saveDraft, saveReceipt, setStorageNamespace } from './storage';
 import { cachedLicenseState, captureReturnedLicense, checkoutUrl, storeLicense, verifyLicense } from './license';
+import { listenForServiceWorkerUpdate } from './service-worker';
 import type { CheckResult, ColumnMapping, CsvData, Draft } from './types';
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector) as T;
@@ -26,6 +27,8 @@ let result: CheckResult | null = null;
 let includedOverrides: Record<string, boolean> = {};
 let proofUnlocked = false;
 let deferredInstall: Event | null = null;
+const demoMode = location.pathname === '/demo' || location.pathname === '/demo/' || new URLSearchParams(location.search).get('demo') === '1';
+setStorageNamespace(demoMode ? 'demo:' : '');
 
 const selectors = {
   date: $('#map-date') as HTMLSelectElement,
@@ -144,11 +147,12 @@ async function loadCsv(contents: string, sourceName: string, restoredMapping?: C
     sourceHashPromise = sha256(contents).then((hash) => { sourceHash = hash; return hash; });
     mapping = restoredMapping ?? suggestMapping(parsed.headers);
     populateMapping(mapping);
+    // Show a loaded sample only after its selected storage namespace accepted it.
+    await persistDraft();
     $('#file-status').innerHTML = `<strong>${escapeHtml(sourceName)}</strong> · ${parsed.rows.length.toLocaleString()} rows · ${parsed.headers.length} columns · delimiter ${parsed.delimiter === '\t' ? 'tab' : escapeHtml(parsed.delimiter)}`;
     show($('#file-status')); show(resetButton); show(mappingSection); show(resultSection, false);
     setMessage(importError, ''); setMessage(mappingError, ''); setStage(2);
     mappingSection.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-    await persistDraft();
   } catch (error) {
     setMessage(importError, error instanceof Error ? error.message : 'This file could not be read.');
   }
@@ -347,6 +351,14 @@ async function restoreDraft(draft: Draft): Promise<void> {
 
 function updateNetworkState(): void { show($('#offline-banner'), !navigator.onLine); }
 
+function focusMainFromSkipLink(event: Event): void {
+  event.preventDefault();
+  const main = $('#main');
+  main.setAttribute('tabindex', '-1');
+  main.focus();
+  history.replaceState(null, '', '#main');
+}
+
 async function renderLicense(): Promise<void> {
   const state = cachedLicenseState();
   proofUnlocked = state.unlocked;
@@ -371,13 +383,25 @@ for (const eventName of ['dragenter', 'dragover']) dropZone.addEventListener(eve
 for (const eventName of ['dragleave', 'drop']) dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); });
 dropZone.addEventListener('drop', (event) => { const file = (event as DragEvent).dataTransfer?.files[0]; if (file) void loadFile(file); });
 
-$('#sample-button').addEventListener('click', async () => {
+async function loadSample(): Promise<void> {
   ($('#statement-name') as HTMLInputElement).value = 'Example current account · March 2026';
   ($('#currency') as HTMLInputElement).value = 'USD';
   ($('#opening-balance') as HTMLInputElement).value = '1200.00';
   ($('#closing-balance') as HTMLInputElement).value = '900.00';
   await loadCsv(sampleCsv, 'example-march-2026.csv');
+}
+$('#sample-button').addEventListener('click', () => { location.assign('/demo'); });
+$('#reset-demo').addEventListener('click', async () => {
+  await clearDraft();
+  await loadSample();
+  setMessage($('#demo-status'), 'Sample reset.');
 });
+$('#start-real').addEventListener('click', async (event) => {
+  event.preventDefault();
+  await clearDraft();
+  location.assign('/');
+});
+$('.skip-link').addEventListener('click', focusMainFromSkipLink);
 mappingForm.addEventListener('change', () => { updateAmountFields(); mapping = readMapping(); void persistDraft(); });
 mappingForm.addEventListener('submit', (event) => { event.preventDefault(); runCheck(); });
 mappingForm.addEventListener('input', () => { if (csv) void persistDraft(); });
@@ -429,15 +453,17 @@ async function registerServiceWorker(): Promise<void> {
   if (!('serviceWorker' in navigator) || import.meta.env.DEV) return;
   const hadController = Boolean(navigator.serviceWorker.controller);
   const registration = await navigator.serviceWorker.register('/sw.js');
-  const announce = () => { if (registration.waiting) show($('#update-toast')); };
-  announce();
-  registration.addEventListener('updatefound', () => registration.installing?.addEventListener('statechange', () => { if (registration.installing?.state === 'installed' && navigator.serviceWorker.controller) show($('#update-toast')); }));
+  listenForServiceWorkerUpdate(registration, () => Boolean(navigator.serviceWorker.controller), () => show($('#update-toast')));
   $('#update-button').addEventListener('click', () => { registration.waiting?.postMessage('SKIP_WAITING'); });
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !refreshing) { refreshing = true; location.reload(); } });
 }
 
 async function initialize(): Promise<void> {
+  if (demoMode) {
+    document.title = 'Demo — Ledger Import Check';
+    show($('#demo-banner'));
+  }
   const returned = captureReturnedLicense();
   if (returned) $('#license-status').textContent = 'Purchase returned. Verifying your license…';
   await renderLicense();
@@ -453,7 +479,7 @@ async function initialize(): Promise<void> {
   if (draft) {
     try { await restoreDraft(draft); $('#file-status').insertAdjacentHTML('beforeend', ' · <strong>restored from this browser</strong>'); }
     catch { /* leave the clean empty state */ }
-  }
+  } else if (demoMode) await loadSample();
   await registerServiceWorker().catch(() => undefined);
 }
 
