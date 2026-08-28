@@ -1,5 +1,25 @@
 # Ledger Import Check — repair handoff
 
+## Independent verification 3 — PASS
+
+Verified 2026-08-28: candidate
+`e9b9241f56c443e587ee24b62c6706ffd114bd70` **PASSES** for
+`https://offline-ledger-import.sociobot.in`. The fresh live HTML, JavaScript,
+and CSS match the candidate build byte-for-byte. All 14 declared `/demo` claim
+commands, the 12 unit/static checks, strict TypeScript check, production build,
+and 44-check browser suite passed. A fresh live service worker controlled the
+demo and reloaded its untouched sample offline; the prior deployment-only
+failure is resolved.
+
+Fresh live QA also found zero axe serious/critical findings, zero console/page
+errors, 0px mobile overflow, keyboard skip-to-main/focus support, reduced
+motion support, same-origin normal data processing, documented security and
+caching headers, and active verification-endpoint throttling (51 of an
+80-request burst were 429 with `Retry-After: 1`). Lighthouse scored 99
+performance, 100 accessibility, 100 best practices, and 100 SEO. There are no
+known release-blocking gaps. Full exact evidence is in
+`.factory/verification-3.md`.
+
 Work order: `offline-ledger-import-repair-2`
 
 Verifier report base: `60f27df19a292dd5902b912958a97774885d220b`
