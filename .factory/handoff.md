@@ -1,28 +1,36 @@
-# Handoff — polish round 2
+# Handoff — adversarial review 3
 
 ## Delivered
 
-Repair commit `0750fb2173f8d203b41a2164f35ebd04f70c37d2` closes every finding from review 1 and review 2. The demo action opens the isolated `/demo?demo=1` path. Proof Kit saves complete receipt copies and lets a buyer download a saved receipt after reload. Claims cover real IndexedDB isolation, archive persistence/download, recorded checkout facts, real draft erasure, telemetry absence, and the precise license-verification request.
+Added `.factory/review-3.md` with a fresh cold-read, copy, demo, claim,
+history, routing, accessibility, link, performance, and missed-leverage review
+of the live product. No product code was changed.
 
-The cassette-era reconciliation zine identity is preserved. The first screen uses plain task wording; Match replaces importer jargon; purchase and 404 copy are plain and specific.
+Verdict: **FAIL** with 13 findings: 3 blocking, 8 major, and 2 minor. The main
+blocker is incomplete demo cleanup: saved demo receipts and demo license keys
+survive both Reset demo and Start for real. Earlier F-1-9 and F-1-11 are
+reopened because the shared footer/build identifier and terminology repairs
+remain incomplete.
 
 ## Verification
 
-- Clean clone: `/tmp/offline-ledger-import-clean.yNTfV6` at repair commit. `npm ci` passed with 0 audit vulnerabilities; `npm test` passed 12 tests; `npx tsc --noEmit` passed; `npm run build` produced `dist/`.
-- Every exact command in `.factory/claims.json` was run from that clean clone: all 19 passed in desktop Chromium and 390×844 mobile contexts.
-- Full browser suite: `npm run test:e2e` passed 58 checks across desktop and mobile using one worker; the prior worker crash was not reproduced.
-- Accessibility: Playwright axe landing and checked-result regressions pass. 390px touch/overflow, skip link, route focus, and reduced-motion regressions pass. `verify-url.sh` against the local cold demo reported title, `lang=en`, one h1, main, no missing alt/unlabeled controls, and no errors: `.factory/evidence/polish-2-verify/verify.json`.
-- Privacy/offline: same-origin processing and explicit no-analytics allowlist claims pass; the build scan rejects telemetry endpoint/SDK markers. The offline reload claim uses a service-worker-controlled demo and `context.setOffline(true)`.
-- Performance build sizes: initial JS 26.01 KB / 10.01 KB gzip; CSS 18.31 KB / 4.93 KB gzip.
+- Clean clone at commit `793f234623d0f5184d362855a07fcae1b6034e7e`.
+- `npm ci`, `npm test` (12/12), `npx tsc --noEmit`, and `npm run build` passed.
+- Every exact command in `.factory/claims.json` passed independently: 19
+  commands and 38 desktop/mobile browser checks.
+- `npm run test:e2e` passed 54 checks with 4 expected project skips.
+- Live 390×844 and 1440×900 cold first read, one-click demo, reset, storage
+  isolation, demo-retention probe, offline workflow, network interception,
+  route metadata, focus/Back, link crawl, touch targets, and visual identity
+  were checked.
+- Live Axe scans on home, demo result, privacy, terms, and 404 returned zero
+  violations at both viewport sizes. `verify-url.sh` returned no errors.
+- Live home HTML exactly matched the clean build by SHA-256.
 
-## Deployment / live check
+## Known gaps / next steps
 
-Deployed with `/opt/fleet/lib/deploy-static.sh offline-ledger-import dist` after pushing `main` at `0871877`. The live home artifact reports `Last-Modified: Fri, 28 Aug 2026 14:46:15 GMT` and contains the repaired demo wording and purchase copy.
-
-- Cold `https://offline-ledger-import.sociobot.in/demo?demo=1`: 200, correct Demo title, `lang=en`, one h1, main, image alt text, labeled controls, and no console/page errors. Evidence: `.factory/evidence/live/polish-2/verify.json`.
-- Live `/privacy/` and `/terms/`: 200. An unknown route: styled HTTP 404 with “We could not find that page.”
-- Fresh live Playwright + Axe checks passed at 1440×900 and 390×844 after running the sample. The persistent banner, filename, exact repeat, balance gap, and `-$30.00` difference all intersected both initial viewports; there were zero serious/critical Axe findings.
-
-## Known gaps
-
-None.
+Implement the concrete fixes in `.factory/review-3.md`, starting with F-3-1,
+F-1-9, and F-1-11. Add claim entries and observable browser tests for the
+unlisted workflow, free-export, saved-workspace, and checkout-disclosure
+statements. Re-run the full review from scratch; this round is not acceptable
+until no findings or untested claims remain.
