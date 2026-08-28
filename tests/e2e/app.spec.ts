@@ -228,7 +228,7 @@ test('imports comma, tab, and semicolon statements through the demo @claim:delim
     await page.getByLabel('Opening balance').fill('0');
     await page.getByLabel('Closing balance').fill('10');
     await page.getByRole('button', { name: /Run balance check/ }).click();
-    await expect(page.getByText('Balances agree.', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓ Balances agree.', { exact: true })).toBeVisible();
   }
 });
 
@@ -342,7 +342,7 @@ test('unlicensed normal workspaces keep every export free and local @claim:free-
   await page.getByLabel('Opening balance').fill('0');
   await page.getByLabel('Closing balance').fill('10');
   await page.getByRole('button', { name: 'Run balance check' }).click();
-  await expect(page.getByText('Balances agree.', { exact: true })).toBeVisible();
+  await expect(page.getByText('✓ Balances agree.', { exact: true })).toBeVisible();
   for (const button of ['Export cleaned CSV', 'Export receipt', 'Download draft backup']) {
     const download = page.waitForEvent('download');
     await page.getByRole('button', { name: button }).click();
