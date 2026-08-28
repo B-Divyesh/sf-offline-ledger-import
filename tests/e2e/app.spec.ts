@@ -9,8 +9,13 @@ async function openDemoAndCheck(page: import('@playwright/test').Page): Promise<
   await expect(page.getByText('The balances do not agree yet.')).toBeVisible();
 }
 
-test('demo uses only its demo: IndexedDB namespace and never restores a real draft @claim:demo-isolation', async ({ page }) => {
+test('demo keeps production IndexedDB and license keys byte-for-byte unchanged @claim:demo-isolation', async ({ page }) => {
   await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem('sb_license:offline-ledger-import', 'REAL-LICENSE');
+    localStorage.setItem('sb_license:offline-ledger-import:verdict', JSON.stringify({ valid: true, checkedAt: 1 }));
+  });
+  const before = await page.evaluate(() => ({ ...localStorage }));
   await page.evaluate(async () => {
     const request = indexedDB.open('ledger-import-check', 1);
     await new Promise<void>((resolve, reject) => {
@@ -21,13 +26,14 @@ test('demo uses only its demo: IndexedDB namespace and never restores a real dra
   });
   await page.goto('/demo');
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
-  await expect(page.getByText('example-march-2026.csv')).toBeVisible();
+  await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
   await expect(page.getByText('real.csv')).toHaveCount(0);
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(page.getByText('Sample reset.')).toBeVisible();
   const names = await page.evaluate(async () => (await indexedDB.databases()).map((database) => database.name));
   expect(names).toContain('ledger-import-check');
   expect(names).toContain('demo:ledger-import-check');
+  expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(before);
   await page.getByRole('link', { name: 'Start for real' }).click();
   await expect(page).toHaveURL(/\/$/);
   await page.goto('/demo');
@@ -36,12 +42,12 @@ test('demo uses only its demo: IndexedDB namespace and never restores a real dra
 
 test('sample detects the exact repeated transaction @claim:duplicate-detection', async ({ page }) => {
   await openDemoAndCheck(page);
-  await expect(page.getByText('Exact repeat')).toBeVisible();
+  await expect(page.getByText('Exact repeat', { exact: true })).toBeVisible();
 });
 
-test('sample reports the supplied closing-balance difference and running-balance jump @claim:balance-check', async ({ page }) => {
+test('sample reports the supplied closing-balance difference and balance gap @claim:balance-check', async ({ page }) => {
   await openDemoAndCheck(page);
-  await expect(page.getByText('1 balance jump located.')).toBeVisible();
+  await expect(page.getByText('1 balance gap located.')).toBeVisible();
   await expect(page.getByText('-$30.00', { exact: true }).first()).toBeVisible();
 });
 
@@ -51,7 +57,12 @@ test('sample exports a cleaned CSV @claim:csv-export', async ({ page }) => {
   await page.getByRole('button', { name: 'Export cleaned CSV' }).click();
   const download = await csvDownload;
   expect(download.suggestedFilename()).toMatch(/clean\.csv$/);
-  expect(await download.createReadStream()).toBeTruthy();
+  const path = await download.path();
+  const payload = await readFile(path as string, 'utf8');
+  expect(payload).toContain('Date,Description,Amount,Reported balance,Source fingerprint');
+  expect(payload.trim().split(/\r?\n/)).toHaveLength(6);
+  expect(payload).toContain('Client invoice');
+  expect(payload.match(/Corner coffee,-4\.50,1095\.50/g)).toHaveLength(1);
 });
 
 test('sample exports a reconciliation receipt @claim:receipt-export', async ({ page }) => {
@@ -60,14 +71,22 @@ test('sample exports a reconciliation receipt @claim:receipt-export', async ({ p
   await page.getByRole('button', { name: 'Download receipt' }).click();
   const download = await receiptDownload;
   expect(download.suggestedFilename()).toMatch(/receipt\.txt$/);
-  expect(await download.createReadStream()).toBeTruthy();
+  const payload = await readFile((await download.path()) as string, 'utf8');
+  expect(payload).toContain('Statement: Example current account · March 2026');
+  expect(payload).toMatch(/Source SHA-256: [a-f0-9]{64}/);
+  expect(payload).toContain('Source rows: 6');
+  expect(payload).toContain('Included rows: 5');
+  expect(payload).toContain('Exact repeats: 1');
+  expect(payload).toContain('Running-balance gap changes: 1');
+  expect(payload).toContain('Unexplained difference: -$30.00');
+  expect(payload).toContain('METHOD NOTE');
 });
 
 test('demo draft recovers after a refresh from its isolated store @claim:draft-recovery', async ({ page }) => {
   await page.goto('/demo');
-  await expect(page.getByText('example-march-2026.csv')).toBeVisible();
+  await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
   await page.reload();
-  await expect(page.getByText('example-march-2026.csv')).toBeVisible();
+  await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
   await expect(page.getByText('restored from this browser')).toBeVisible();
 });
 
@@ -96,7 +115,7 @@ test('imports comma, tab, and semicolon statements through the demo @claim:delim
 
 test('exports and restores the active draft as JSON @claim:json-draft-backup', async ({ page }) => {
   await page.goto('/demo');
-  await expect(page.getByText('example-march-2026.csv')).toBeVisible();
+  await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
 
   const backupDownload = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download draft backup' }).click();
@@ -140,8 +159,8 @@ test('demo has no sign-in field or account request @claim:no-sign-in', async ({ 
 
 test('a cached Proof Kit license can save a local receipt index entry @claim:receipt-index', async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.setItem('sb_license:offline-ledger-import', 'demo-license');
-    localStorage.setItem('sb_license:offline-ledger-import:verdict', JSON.stringify({ valid: true, checkedAt: Date.now(), reason: 'ok' }));
+    localStorage.setItem('demo:sb_license:offline-ledger-import', 'demo-license');
+    localStorage.setItem('demo:sb_license:offline-ledger-import:verdict', JSON.stringify({ valid: true, checkedAt: Date.now(), reason: 'ok' }));
   });
   await openDemoAndCheck(page);
   await expect(page.getByRole('button', { name: 'Save to Proof Kit' })).toBeVisible();
@@ -151,9 +170,29 @@ test('a cached Proof Kit license can save a local receipt index entry @claim:rec
 });
 
 test('Proof Kit states its one-time price and Sociobot checkout address @claim:proof-kit-price', async ({ page }) => {
-  await page.goto('/demo');
-  await expect(page.getByText('$12 once')).toBeVisible();
+  await page.goto('/');
+  await expect(page.getByText('$12 one-time')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Buy Proof Kit' })).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout');
+  await page.goto('/terms/');
+  await expect(page.getByText(/Sociobot\/Dodo is the merchant of record/)).toBeVisible();
+  await expect(page.getByText(/Refunds are handled there and revoke the license/)).toBeVisible();
+});
+
+test('Erase local draft removes the active bank CSV @claim:erase-draft', async ({ page }) => {
+  await page.goto('/demo');
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Erase local draft' }).click();
+  await expect(page.locator('#file-status')).toBeHidden();
+  await page.reload();
+  await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
+});
+
+test('the published app loads scripts, styles, and fonts only from this site @claim:self-hosted-assets', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await page.goto('/');
+  await expect(page.locator('script[src], link[rel="stylesheet"]')).toHaveCount(2);
+  expect(requests.every((url) => new URL(url).origin === 'http://127.0.0.1:4173')).toBe(true);
 });
 
 test('example completes the workflow and exports both evidence files', async ({ page }) => {
@@ -164,8 +203,8 @@ test('example completes the workflow and exports both evidence files', async ({ 
   await expect(page.getByRole('heading', { name: 'Tell us which column is which' })).toBeVisible();
   await page.getByRole('button', { name: /Run balance check/ }).click();
   await expect(page.getByText('The balances do not agree yet.')).toBeVisible();
-  await expect(page.getByText('1 balance jump located.')).toBeVisible();
-  await expect(page.getByText('Exact repeat')).toBeVisible();
+  await expect(page.getByText('1 balance gap located.')).toBeVisible();
+  await expect(page.getByText('Exact repeat', { exact: true })).toBeVisible();
 
   const csvDownload = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export cleaned CSV' }).click();
@@ -203,7 +242,7 @@ test('reopens the app shell while offline', async ({ page, context }) => {
   await page.reload();
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: /Check bank CSVs/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Review a sample bank CSV' })).toBeVisible();
   await expect(page.getByText(/Offline mode/)).toBeVisible();
 });
 
@@ -233,15 +272,35 @@ test('the demo remains usable after its first visit while offline @claim:offline
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByLabel('Demo controls')).toBeVisible();
-  await expect(page.getByText('example-march-2026.csv')).toBeVisible();
+  await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
 });
 
 test('the landing first read has a one-click sample action and plain job statement @claim:first-read-demo', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle('Ledger Import Check — check bank CSVs privately');
+  await expect(page).toHaveTitle('Ledger Import Check — check bank CSVs');
   await expect(page.getByRole('heading', { level: 1, name: 'Check bank CSVs before importing' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Try it with sample data/ })).toHaveAttribute('href', '/demo');
   await expect(page.getByText('For households and freelancers: find repeats and balance gaps before importing.')).toBeVisible();
+});
+
+test('demo banner and sample evidence stay in the first mobile and desktop viewport @claim:demo-first-viewport', async ({ page }) => {
+  await page.goto('/demo');
+  const viewport = page.viewportSize()!;
+  for (const name of ['Demo controls', 'example-march-2026.csv', '1 exact repeat', '1 balance gap', '-$30.00 difference']) {
+    const box = await (name === 'Demo controls' ? page.getByLabel(name) : page.getByText(name, { exact: true }).first()).boundingBox();
+    expect(box, `${name} has a box`).not.toBeNull();
+    expect(box!.y).toBeLessThan(viewport.height);
+    expect(box!.y + box!.height).toBeGreaterThan(0);
+  }
+});
+
+test('all product controls meet 44px touch targets at 390px @regression:touch-targets', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile');
+  await page.goto('/demo');
+  const undersized = await page.locator('a, button, summary, label[for]').evaluateAll((items) => items.filter((item) => {
+    const box = item.getBoundingClientRect(); return box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44);
+  }).map((item) => `${item.tagName}:${item.textContent?.trim()}`));
+  expect(undersized).toEqual([]);
 });
 
 test('skip link moves keyboard focus to the main landmark @regression:skip-link', async ({ page }) => {
@@ -249,4 +308,23 @@ test('skip link moves keyboard focus to the main landmark @regression:skip-link'
   await page.getByRole('link', { name: 'Skip to ledger check' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('main')).toBeFocused();
+});
+
+test('real routes have their own title, metadata, shared shell, and focused heading', async ({ page }) => {
+  const routes = [
+    ['/privacy/', 'Privacy — Ledger Import Check'],
+    ['/terms/', 'Terms — Ledger Import Check'],
+    ['/404/', 'Page not found — Ledger Import Check']
+  ] as const;
+  for (const [route, title] of routes) {
+    await page.goto(route);
+    await expect(page).toHaveTitle(title);
+    await expect(page.locator('meta[name="description"]')).toHaveCount(1);
+    await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /ledger-social\.jpg$/);
+    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
+    await expect(page.locator('header nav a')).toHaveCount(4);
+    await expect(page.locator('footer')).toContainText('Built by Param Factory');
+    await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  }
 });

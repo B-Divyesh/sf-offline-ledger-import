@@ -1,43 +1,34 @@
-# Ledger Import Check — review 1 handoff
+# Handoff — Polish 1
 
-## Outcome
+Ledger Import Check remains a static Vite TypeScript PWA with IndexedDB local storage and a hand-written offline service worker. This repair closes every finding in `.factory/review-1.md`.
 
-Adversarial first-read review 1 is complete. Verdict: **FAIL** with 14 findings
-(3 blocking, 7 major, 4 minor). No product code was changed.
+## Delivered
 
-The blocking defects are:
+- Complete demo isolation, including `demo:` license state; demo purchase and verification are unavailable.
+- A persistent demo banner and a pre-checked first viewport at 390px.
+- Readable CSV/receipt download assertions, a complete claims contract, route metadata, real legal/404 shells, focus handling, and 44px touch targets.
+- Plain-language copy, a 1200×630 social image, 180px apple-touch icon, and provenance notes.
 
-1. `/demo` reads and writes the production Proof Kit license keys.
-2. The demo banner scrolls out of the initial demo viewport and is not persistent.
-3. The first 390×844 demo viewport does not show recognizable sample data or a result.
+## Verification
 
-Full evidence, exact copy, fixes, claim results, and history checks are in
-`.factory/review-1.md`.
+- Clean install: `npm ci` — passed, 0 vulnerabilities.
+- Unit/static contract: `npm test` — 12 passed.
+- Typecheck: `npx tsc --noEmit` — passed.
+- Deployment build: `npm run build` — passed, `dist/index.html` produced. Initial JS is 25.45 kB (9.85 kB gzip); CSS is 18.31 kB (4.93 kB gzip).
+- Browser/accessibility/privacy/offline suite: `npm run test:e2e` — 54 tests passed across desktop and 390px mobile, including Axe serious/critical scans, service-worker offline reload, route focus, and touch targets.
+- Every declared `@claim:` test runs from the `/demo` sandbox; focused final claim run for demo isolation, receipt index, price, and first viewport passed 8/8 across both projects.
 
-## Verification performed
+## Run and deploy
 
-- Cold live Chromium at 390×844 and 1440×900.
-- One-click live demo, Reset, Start for real, real-draft preservation, license
-  storage isolation probe, same-origin request capture, and offline reload.
-- All 14 exact claims.json test commands, independently: passed.
-- `npm test`: 12/12 passed.
-- `npx tsc --noEmit`: passed.
-- `npm run build`: passed; `dist/` produced.
-- `npm run test:e2e`: 41 passed, 3 intentional project skips.
-- Live route metadata/status scan and complete link crawl.
-- Live checked-result Playwright axe at desktop and mobile: zero
-  serious/critical findings.
-- `/opt/fleet/lib/verify-url.sh`: passed when run with a temporary evidence
-  directory.
-- Live service-worker update probe: a waiting worker displayed the update toast.
+```sh
+npm ci
+npm test
+npx tsc --noEmit
+npm run build
+npm run test:e2e
+/opt/fleet/lib/deploy-static.sh offline-ledger-import dist
+```
 
-## Files changed
+## Known gaps
 
-- `.factory/review-1.md` — new independent review.
-- `.factory/handoff.md` — review handoff replacing the earlier repair handoff.
-
-## Next step
-
-Repair F-1-1 through F-1-14, deploy, and run a new full review from a fresh
-browser context. Do not treat the passing automated suite as acceptance until
-the demo isolation and viewport-level demo checks are added.
+None. Live URL, screenshot, accessibility, and deployment evidence are appended after deployment.

@@ -1,11 +1,7 @@
 # Demo sandbox
 
-Open `https://offline-ledger-import.sociobot.in/demo` (or run locally and open
-`/demo`). It immediately loads a six-row March 2026 current-account statement:
-one exact repeat and one running-balance jump leave a $30.00 closing difference.
+Open `https://offline-ledger-import.sociobot.in/demo` or `/demo?demo=1` locally. It opens a six-row March 2026 bank CSV already checked. The first screen shows its filename, one exact repeat, one balance gap, and a -$30.00 difference.
 
-The persistent **Demo — sample data, nothing is saved** banner exposes **Reset
-demo** and **Start for real**. Demo drafts use the separate IndexedDB database
-`demo:ledger-import-check`; real work uses `ledger-import-check`. The app never
-reads or writes the real database while the demo banner is present. Start for
-real erases the demo draft before navigating to `/`.
+The sticky **Demo — sample data, nothing is saved** banner stays visible with **Reset demo** and **Start for real**. Reset restores the shipped sample. Start for real clears the demo namespace and opens the normal workspace.
+
+Demo drafts and receipt entries use the IndexedDB database `demo:ledger-import-check`. Demo license state uses `demo:sb_license:offline-ledger-import` and its matching verdict key. Normal data uses the same names without `demo:`. The demo never reads or writes normal storage.

@@ -44,16 +44,21 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .network-banner { padding: 8px 24px; background: var(--amber); color: var(--white); text-align: center; font-weight: 700; }
 .network-error { background: #852b20; }
 .site-header { min-height: 72px; max-width: 1280px; margin: auto; padding: 12px 32px; display: flex; align-items: center; gap: 28px; border-bottom: 2px solid var(--ink); }
-.wordmark { display: inline-flex; align-items: center; gap: 12px; margin-right: auto; color: var(--ink); font: 700 1rem/1 "Courier Prime", monospace; text-decoration: none; }
+.wordmark { min-height: 44px; display: inline-flex; align-items: center; gap: 12px; margin-right: auto; color: var(--ink); font: 700 1rem/1 "Courier Prime", monospace; text-decoration: none; }
 .wordmark-mark { color: var(--oxide); letter-spacing: -3px; border: 2px solid var(--ink); padding: 6px 7px 4px; }
 .site-header nav, footer nav { display: flex; gap: 20px; }
-.site-header nav a { color: var(--ink); font-weight: 700; }
+.site-header nav a, footer nav a { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; color: var(--ink); font-weight: 700; }
 
 main { display: block; }
-.demo-banner { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 24px; background: var(--ink); color: var(--sheet); font-size: .9rem; }
-.demo-banner .text-button { color: var(--sheet); min-height: 32px; }
+.demo-banner { position: sticky; top: 0; z-index: 30; min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 4px 24px; background: var(--ink); color: var(--sheet); font-size: .9rem; box-shadow: 0 2px 0 var(--oxide); }
+.demo-banner .text-button { color: var(--sheet); min-height: 44px; }
 .demo-banner #demo-status:empty { display: none; }
 .hero { max-width: 1280px; min-height: 650px; margin: 0 auto; padding: 64px 32px 72px; display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; gap: 56px; }
+.demo-summary { max-width: 1180px; margin: 0 auto; padding: 24px 32px 20px; border-bottom: 3px dashed var(--ink); background: var(--sheet); }
+.demo-summary h1 { max-width: 20ch; margin-bottom: 12px; font-size: clamp(2rem, 6vw, 3.5rem); }
+.demo-summary > p { margin: 10px 0; }
+.demo-facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; font: 700 .9rem "Courier Prime", monospace; }
+.demo-facts span { padding: 6px 9px; border: 2px solid var(--ink); background: #f7e6bd; }
 .hero-copy { max-width: 690px; }
 .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; margin: 28px 0 22px; }
 .hero-actions > span { max-width: 24ch; color: var(--muted); font-size: .94rem; }
@@ -188,6 +193,7 @@ footer .fine-print { grid-column: 1 / -1; }
 @media (max-width: 880px) {
   .site-header { padding-inline: 20px; flex-wrap: wrap; gap: 12px 20px; }
   .site-header nav { order: 3; width: 100%; padding-top: 8px; border-top: 1px dashed var(--hairline); }
+  .site-header nav a { min-height: 44px; }
   .hero { min-height: auto; grid-template-columns: 1fr; padding: 48px 24px 72px; }
   .hero-art { max-width: 640px; }
   .workbench { margin-inline: 16px; }
@@ -211,7 +217,10 @@ footer .fine-print { grid-column: 1 / -1; }
   h1 { font-size: clamp(2.8rem,15vw,4.3rem); }
   .lead { font-size: 1.1rem; }
   .hero-actions .button { width: 100%; }
-  .demo-banner { align-items: flex-start; flex-wrap: wrap; justify-content: flex-start; padding-inline: 20px; }
+  .demo-banner { align-items: center; flex-wrap: wrap; justify-content: flex-start; padding: 4px 20px; }
+  .demo-banner strong { width: 100%; }
+  .demo-summary { padding: 16px 20px 14px; }
+  .demo-summary h1 { font-size: 2rem; }
   .trust-strip { display: grid; gap: 8px; }
   .hero-art { transform: none; box-shadow: 6px 6px 0 var(--oxide); }
   .stage-rail { position: static; }

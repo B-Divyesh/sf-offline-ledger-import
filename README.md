@@ -1,20 +1,22 @@
 # Ledger Import Check
 
-Check bank CSVs before importing. Ledger Import Check is for privacy-sensitive households and freelancers. The sample demo shows an exact repeated transaction, a running-balance jump, a closing-balance difference, and the cleaned CSV and receipt exports.
+Check bank CSVs before importing. It is for households and freelancers who want to find repeats and balance gaps locally.
 
-It is not a budgeting app, bank connection, audit, tax calculator, or financial adviser. Statement data stays in the browser during the normal checking flow.
+The demo includes a March 2026 bank CSV. It shows one repeat, one balance gap, and a $30.00 difference. It is not budgeting software, financial advice, or a bank connection.
 
 Live: <https://offline-ledger-import.sociobot.in>
 
-## Try the isolated sample
+## Try the sample
 
-Open [the demo](https://offline-ledger-import.sociobot.in/demo). It starts with a realistic six-row March 2026 statement, has a persistent demo banner, and keeps its draft in `demo:ledger-import-check`, separate from your own `ledger-import-check` browser data. **Reset demo** reloads the sample. **Start for real** returns to a clean normal workspace.
+Open [the demo](https://offline-ledger-import.sociobot.in/demo). The demo opens with its sample already checked. Sample work stays separate from your saved workspace. Reset demo restores the sample. Start for real opens your saved workspace.
 
-## Local data and paid unlock
+## Your data and Proof Kit
 
-The active draft is stored in IndexedDB and can be exported/restored as JSON. Cleaned CSV and reconciliation receipt exports are always free. The optional $12 one-time Proof Kit license adds a local receipt index; it uses only the Sociobot hosted checkout and license-verification API. Clearing site data removes the draft, receipt index, and saved license token, so downloaded backups are the durable copy.
+Your bank CSV stays in this browser during normal checks. The draft survives refresh and can be exported or restored as JSON. Download a backup before clearing browser data.
 
-See [privacy](https://offline-ledger-import.sociobot.in/privacy/) and [terms](https://offline-ledger-import.sociobot.in/terms/).
+Cleaned CSV and receipt exports are free. Proof Kit is a one-time $12 license for a local receipt index. See [privacy](https://offline-ledger-import.sociobot.in/privacy/) and [terms](https://offline-ledger-import.sociobot.in/terms/).
+
+The built app adds no analytics or external font/CDN requests. It serves its own app files.
 
 ## Develop and verify
 
@@ -24,23 +26,20 @@ Requires a current Node.js release.
 npm ci
 npm run dev
 npm test
-npm run build       # exact deployment build; outputs dist/index.html
-npm run test:e2e    # production browser, mobile, axe, and offline checks
+npm run build
+npm run test:e2e
 ```
 
-The full claim contract is in [`.factory/claims.json`](.factory/claims.json). Each claim command runs from the `/demo` sandbox.
+The full claim contract is in [`.factory/claims.json`](.factory/claims.json). Every claim command starts from `/demo`. Playwright is pinned to 1.58.2.
 
-Playwright is pinned to 1.58.2. In a fresh environment, install Chromium with `npx playwright install chromium` if it is not already available.
-
-The Vite build is a static site. Deploy the contents of `dist/` at the domain root. No runtime server, environment variable, product ID, analytics script, or external font/CDN is required. The factory registers and activates the paid product separately.
+Deploy `dist/` at the domain root. The factory registers the paid product separately.
 
 ## Structure
 
-- `src/csv.ts` — format detection, parsing, normalization, mapping suggestions
-- `src/reconcile.ts` — repeat fingerprints and running/end-balance checks
-- `src/storage.ts` — IndexedDB draft and receipt index
-- `src/license.ts` — one-time Sociobot license capture and daily verification
-- `public/sw-template.js` — versioned local app shell and offline routing
-- `.factory/design.md` — cassette-zine visual system and artwork provenance
+- `src/csv.ts` — parsing, normalization, and column suggestions
+- `src/reconcile.ts` — repeat and balance-gap checks
+- `src/storage.ts` — local draft and receipt storage
+- `src/license.ts` — one-time Sociobot license storage and verification
+- `public/sw-template.js` — versioned offline app shell
 
 MIT licensed. See `LICENSE`.

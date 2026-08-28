@@ -2,7 +2,7 @@ import './styles.css';
 import { escapeCsv, importTransactions, parseCsv, parseMoney, suggestMapping } from './csv';
 import { reconcile } from './reconcile';
 import { clearDraft, loadDraft, loadReceipts, saveDraft, saveReceipt, setStorageNamespace } from './storage';
-import { cachedLicenseState, captureReturnedLicense, checkoutUrl, storeLicense, verifyLicense } from './license';
+import { cachedLicenseState, captureReturnedLicense, checkoutUrl, setLicenseStoragePrefix, storeLicense, verifyLicense } from './license';
 import { listenForServiceWorkerUpdate } from './service-worker';
 import type { CheckResult, ColumnMapping, CsvData, Draft } from './types';
 
@@ -29,6 +29,7 @@ let proofUnlocked = false;
 let deferredInstall: Event | null = null;
 const demoMode = location.pathname === '/demo' || location.pathname === '/demo/' || new URLSearchParams(location.search).get('demo') === '1';
 setStorageNamespace(demoMode ? 'demo:' : '');
+setLicenseStoragePrefix(demoMode ? 'demo:' : '');
 
 const selectors = {
   date: $('#map-date') as HTMLSelectElement,
@@ -139,7 +140,7 @@ function renderPreview(): void {
   $('#preview-body').innerHTML = csv.rows.slice(0, 3).map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell) || '<span aria-label="empty">—</span>'}</td>`).join('')}</tr>`).join('');
 }
 
-async function loadCsv(contents: string, sourceName: string, restoredMapping?: ColumnMapping): Promise<void> {
+async function loadCsv(contents: string, sourceName: string, restoredMapping?: ColumnMapping, scrollToMapping = true): Promise<void> {
   try {
     const parsed = parseCsv(contents);
     csv = parsed; csvText = contents; filename = sourceName; result = null; includedOverrides = {};
@@ -152,7 +153,7 @@ async function loadCsv(contents: string, sourceName: string, restoredMapping?: C
     $('#file-status').innerHTML = `<strong>${escapeHtml(sourceName)}</strong> · ${parsed.rows.length.toLocaleString()} rows · ${parsed.headers.length} columns · delimiter ${parsed.delimiter === '\t' ? 'tab' : escapeHtml(parsed.delimiter)}`;
     show($('#file-status')); show(resetButton); show(mappingSection); show(resultSection, false);
     setMessage(importError, ''); setMessage(mappingError, ''); setStage(2);
-    mappingSection.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    if (scrollToMapping) mappingSection.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   } catch (error) {
     setMessage(importError, error instanceof Error ? error.message : 'This file could not be read.');
   }
@@ -249,14 +250,14 @@ function renderResult(): void {
     ['Source rows', result.rows.length],
     ['Included', result.rows.filter((row) => row.included).length],
     ['Repeat candidates', candidateCount],
-    ['Gap changes', result.gapCount],
+    ['Balance gaps', result.gapCount],
     ['Unexplained', money(result.closingDifference)]
   ].map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
   const balanceNote = $('#balance-note');
   if (result.hasRunningBalances) {
     balanceNote.innerHTML = result.gapCount
-      ? `<strong>${result.gapCount} balance jump${result.gapCount === 1 ? '' : 's'} located.</strong> “Gap starts” marks where the bank’s running balance changes by more than the included rows explain.`
-      : '<strong>No running-balance jumps found.</strong> Each reported balance follows from the prior included amount.';
+      ? `<strong>${result.gapCount} balance gap${result.gapCount === 1 ? '' : 's'} located.</strong> “Balance gap starts” marks where the bank’s running balance changes by more than the included rows explain.`
+      : '<strong>No balance gaps found.</strong> Each reported balance follows from the prior included amount.';
   } else {
     balanceNote.innerHTML = '<strong>No running-balance column was mapped.</strong> The end difference is still checked, but the app cannot locate where a missing row begins.';
   }
@@ -277,7 +278,7 @@ function renderRows(): void {
     if (row.error) findings.push(`<span class="finding finding-danger">${escapeHtml(row.error)}</span>`);
     if (row.duplicateKind === 'exact') findings.push('<span class="finding finding-warn">Exact repeat</span>');
     if (row.duplicateKind === 'possible') findings.push('<span class="finding finding-warn">Possible repeat</span>');
-    if (row.startsGap) findings.push(`<span class="finding finding-danger">Gap starts ${escapeHtml(money(row.discrepancy))}</span>`);
+    if (row.startsGap) findings.push(`<span class="finding finding-danger">Balance gap starts ${escapeHtml(money(row.discrepancy))}</span>`);
     if (!findings.length) findings.push('<span class="finding finding-ok">Clear</span>');
     const running = row.reportedBalance == null ? 'Not supplied' : `${money(row.reportedBalance)} reported<br><small>${money(row.expectedBalance)} expected</small>`;
     return `<tr data-issue="${Boolean(row.error || row.duplicateKind || row.startsGap)}" data-excluded="${!row.included}" data-invalid="${Boolean(row.error)}">
@@ -388,7 +389,8 @@ async function loadSample(): Promise<void> {
   ($('#currency') as HTMLInputElement).value = 'USD';
   ($('#opening-balance') as HTMLInputElement).value = '1200.00';
   ($('#closing-balance') as HTMLInputElement).value = '900.00';
-  await loadCsv(sampleCsv, 'example-march-2026.csv');
+  await loadCsv(sampleCsv, 'example-march-2026.csv', undefined, !demoMode);
+  if (demoMode) runCheck(false);
 }
 $('#sample-button').addEventListener('click', () => { location.assign('/demo'); });
 $('#reset-demo').addEventListener('click', async () => {
@@ -433,6 +435,10 @@ $('#archive-receipt').addEventListener('click', async () => {
 $('#buy-link').setAttribute('href', checkoutUrl());
 $('#license-form').addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (demoMode) {
+    $('#license-status').textContent = 'Proof Kit verification is unavailable in the sample.';
+    return;
+  }
   const token = ($('#license-token') as HTMLInputElement).value.trim();
   if (!token) return;
   storeLicense(token); $('#license-status').textContent = 'Checking license…';
@@ -466,17 +472,29 @@ async function registerServiceWorker(): Promise<void> {
 async function initialize(): Promise<void> {
   if (demoMode) {
     document.title = 'Demo — Ledger Import Check';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Review a sample bank CSV with a repeat, a balance gap, and a reconciliation receipt.');
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', 'https://offline-ledger-import.sociobot.in/demo');
+    document.body.classList.add('demo-mode');
+    const heroTitle = $('#hero-title');
+    heroTitle.id = 'demo-title';
+    heroTitle.textContent = 'Review a sample bank CSV';
+    $('#demo-summary').querySelector('.eyebrow')?.insertAdjacentElement('afterend', heroTitle);
+    show($('#demo-summary'));
+    show($('.hero'), false);
     show($('#demo-banner'));
+    show($('#buy-link'), false);
+    show($('#license-form').closest('details') as HTMLElement, false);
+    $('#license-status').textContent = 'Proof Kit purchases are unavailable in the sample.';
   }
-  const returned = captureReturnedLicense();
+  const returned = demoMode ? false : captureReturnedLicense();
   if (returned) $('#license-status').textContent = 'Purchase returned. Verifying your license…';
   await renderLicense();
   const tokenState = cachedLicenseState();
-  if (tokenState.token && (returned || !tokenState.unlocked)) {
+  if (!demoMode && tokenState.token && (returned || !tokenState.unlocked)) {
     const verdict = await verifyLicense(returned);
     if (!verdict.valid && verdict.reason !== 'offline') $('#license-status').textContent = 'License no longer active. The free checker remains available.';
     await renderLicense();
-  } else if (tokenState.token) {
+  } else if (!demoMode && tokenState.token) {
     void verifyLicense().then(renderLicense);
   }
   const draft = await loadDraft().catch(() => undefined);
@@ -485,6 +503,11 @@ async function initialize(): Promise<void> {
     catch { /* leave the clean empty state */ }
   } else if (demoMode) await loadSample();
   await registerServiceWorker();
+  const routeHeading = document.querySelector<HTMLElement>(demoMode ? '#demo-title' : '#hero-title');
+  if (routeHeading) {
+    routeHeading.tabIndex = -1;
+    requestAnimationFrame(() => routeHeading.focus({ preventScroll: true }));
+  }
 }
 
 void initialize();
