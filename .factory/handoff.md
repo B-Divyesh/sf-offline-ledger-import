@@ -29,6 +29,14 @@ npm run test:e2e
 /opt/fleet/lib/deploy-static.sh offline-ledger-import dist
 ```
 
+## Deployment evidence
+
+- Repair commit: `fcf38b71b1eabcac7db298153942c7096bc2d594`.
+- Static deployment: Azure Static Web Apps deployment `77b1d9b9-c79b-4859-9ee9-94c521d8dd25` to `https://offline-ledger-import.sociobot.in`.
+- Cold live verifier: `.factory/evidence/live/verify-demo/verify.json` — HTTP 200, title `Demo — Ledger Import Check`, `lang=en`, one h1, one main, no console errors, no missing image alt or unnamed button.
+- Live production Axe scan at 390×844: zero serious/critical violations.
+- Captured live evidence: `.factory/evidence/live/verify-demo/screenshot-desktop.png` and `.factory/evidence/live/verify-demo/screenshot-mobile.png`.
+
 ## Known gaps
 
-None. Live URL, screenshot, accessibility, and deployment evidence are appended after deployment.
+None.

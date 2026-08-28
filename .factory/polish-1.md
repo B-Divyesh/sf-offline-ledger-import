@@ -2,9 +2,9 @@
 
 | Finding | Change made | Evidence |
 | --- | --- | --- |
-| F-1-1 | Namespaced demo license keys with `demo:` and blocked demo checkout/verification. Reset clears demo-only storage. | `@claim:demo-isolation`; `tests/e2e/app.spec.ts`; live `/demo` check after deploy. |
-| F-1-2 | Made the demo controls sticky and raised every control to a 44px target. | `@claim:demo-first-viewport`; mobile screenshot captured after deploy. |
-| F-1-3 | Added a compact, pre-checked demo summary with filename, sample rows, repeat, balance gap, and difference. | `@claim:demo-first-viewport`; live `/demo` at 390px. |
+| F-1-1 | Namespaced demo license keys with `demo:` and blocked demo checkout/verification. Reset clears demo-only storage. | `@claim:demo-isolation`; live `/demo`; `.factory/evidence/live/verify-demo/verify.json`. |
+| F-1-2 | Made the demo controls sticky and raised every control to a 44px target. | `@claim:demo-first-viewport`; `@regression:touch-targets`; `screenshot-mobile.png`. |
+| F-1-3 | Added a compact, pre-checked demo summary with filename, sample rows, repeat, balance gap, and difference. | `@claim:demo-first-viewport`; live `/demo`; `screenshot-mobile.png`. |
 | F-1-4 | Download tests now read and assert CSV and receipt payloads, including rows, hash, counts, discrepancy, and method. | `@claim:csv-export`; `@claim:receipt-export`. |
 | F-1-5 | Kept the one-time $12 offer and checkout contract; added merchant/refund terms and a claim test. Demo cannot purchase or verify. | `@claim:proof-kit-price`; live `/terms/`. |
 | F-1-6 | Rewrote lifecycle copy around preserved work and added an erase-draft claim test. | `@claim:erase-draft`; `@claim:draft-recovery`. |
