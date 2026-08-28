@@ -1,0 +1,14 @@
+{
+  "url": "https://offline-ledger-import.sociobot.in/",
+  "loadMs": 782,
+  "errors": [],
+  "a11y": {
+    "title": "Ledger Import Check — check bank CSVs",
+    "lang": "en",
+    "h1": 1,
+    "main": true,
+    "imgsMissingAlt": 0,
+    "buttonsUnlabeled": 0,
+    "textLength": 1379
+  }
+}

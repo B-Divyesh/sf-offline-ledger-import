@@ -1,36 +1,56 @@
-# Handoff — adversarial review 3
+# Handoff — polish 3 complete
 
 ## Delivered
 
-Added `.factory/review-3.md` with a fresh cold-read, copy, demo, claim,
-history, routing, accessibility, link, performance, and missed-leverage review
-of the live product. No product code was changed.
+Resolved every finding in `review-1.md`, `review-2.md`, and `review-3.md`.
+The published artifact is code commit `2b1cd6674f49` and is live at
+<https://offline-ledger-import.sociobot.in/>. Repair commits were pushed to
+`main`; the final evidence map is `.factory/polish-3.md`.
 
-Verdict: **FAIL** with 13 findings: 3 blocking, 8 major, and 2 minor. The main
-blocker is incomplete demo cleanup: saved demo receipts and demo license keys
-survive both Reset demo and Start for real. Earlier F-1-9 and F-1-11 are
-reopened because the shared footer/build identifier and terminology repairs
-remain incomplete.
+The repair makes demo reset and exit delete the complete demo-only IndexedDB
+database and every demo license key. It adds all missing claims and observable
+tests, rewrites the remaining ambiguous copy, supplies a real artifact SHA in
+the common footer, standardizes route metadata/legal pages, and raises text
+actions to a 48px minimum target without changing the cassette-zine visual
+system.
 
 ## Verification
 
-- Clean clone at commit `793f234623d0f5184d362855a07fcae1b6034e7e`.
-- `npm ci`, `npm test` (12/12), `npx tsc --noEmit`, and `npm run build` passed.
-- Every exact command in `.factory/claims.json` passed independently: 19
-  commands and 38 desktop/mobile browser checks.
-- `npm run test:e2e` passed 54 checks with 4 expected project skips.
-- Live 390×844 and 1440×900 cold first read, one-click demo, reset, storage
-  isolation, demo-retention probe, offline workflow, network interception,
-  route metadata, focus/Back, link crawl, touch targets, and visual identity
-  were checked.
-- Live Axe scans on home, demo result, privacy, terms, and 404 returned zero
-  violations at both viewport sizes. `verify-url.sh` returned no errors.
-- Live home HTML exactly matched the clean build by SHA-256.
+- Fresh clone at `2b1cd6674f49`: `npm ci`, `npm test` (12/12),
+  `npx tsc --noEmit`, and `npm run build` all passed.
+- Every one of the 27 commands declared in `.factory/claims.json` was run from
+  that clean clone. The final full suite also executed every claim across
+  desktop and 390px mobile: `npm run test:e2e` passed **75 tests** with
+  **5 intentional project skips** and no failures. Exact command output is in
+  `.factory/evidence/polish-3/clean-claims.log` and `clean-e2e.log`.
+- Browser suite covers real demo isolation/reset/exit, downloads, local-only
+  request allowlists, offline reload, data deletion, metadata/focus/Back,
+  desktop/mobile accessibility, and 44px touch targets.
+- Live cold checks passed for `/`, `/demo?demo=1`, `/privacy/`, `/terms/`, and
+  `/404/`; `verify-url.sh` reports no console errors, one h1, one main, `lang`,
+  titles, and complete image/button labels on home and demo.
+- A live reset/exit probe wrote demo-only license/receipt state, reset it,
+  confirmed no demo keys or receipt remained, then confirmed Start for real
+  removed the demo database. The live routes share `build 2b1cd6674f49`.
+- Live Playwright Axe scans found zero serious/critical violations on home,
+  demo, privacy, terms, and 404. (The Selenium-based Axe CLI cannot launch its
+  own Chrome binary in this worker; the repository's Playwright Axe integration
+  is the executed accessibility gate.)
+- Lighthouse evidence: desktop Performance 100, Accessibility 100,
+  Best Practices 96, SEO 100 (LCP 0.4s, CLS 0.002); mobile Performance 98,
+  Accessibility 100, Best Practices 100, SEO 100 (LCP 1.5s, CLS 0.074).
 
-## Known gaps / next steps
+## Run and deploy
 
-Implement the concrete fixes in `.factory/review-3.md`, starting with F-3-1,
-F-1-9, and F-1-11. Add claim entries and observable browser tests for the
-unlisted workflow, free-export, saved-workspace, and checkout-disclosure
-statements. Re-run the full review from scratch; this round is not acceptable
-until no findings or untested claims remain.
+```sh
+npm ci
+npm test
+npx tsc --noEmit
+npm run build
+npm run test:e2e
+/opt/fleet/lib/deploy-static.sh offline-ledger-import dist
+```
+
+## Known gaps
+
+None.
