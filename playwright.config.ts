@@ -5,7 +5,11 @@ export default defineConfig({
   timeout: 30_000,
   workers: 1,
   fullyParallel: false,
-  use: { baseURL: 'http://127.0.0.1:4173', trace: 'retain-on-failure' },
+  use: {
+    baseURL: 'http://127.0.0.1:4173',
+    channel: 'chromium',
+    trace: 'retain-on-failure'
+  },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile', use: { ...devices['Pixel 5'], viewport: { width: 390, height: 844 } } }
