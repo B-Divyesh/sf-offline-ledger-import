@@ -1,0 +1,14 @@
+{
+  "url": "https://offline-ledger-import.sociobot.in/demo?demo=1",
+  "loadMs": 740,
+  "errors": [],
+  "a11y": {
+    "title": "Demo — Ledger Import Check",
+    "lang": "en",
+    "h1": 1,
+    "main": true,
+    "imgsMissingAlt": 0,
+    "buttonsUnlabeled": 0,
+    "textLength": 3784
+  }
+}

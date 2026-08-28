@@ -24,4 +24,4 @@ Candidate repaired from `655b5277006000b92bf514714a91d0049e96bfe7` using reviews
 - Local cold demo: `http://127.0.0.1:4173/demo?demo=1` passed title, language, one h1, main, alt, controls, and console/page-error checks in `.factory/evidence/polish-2-verify/verify.json`.
 - Desktop screenshot: `.factory/evidence/polish-2-demo-desktop.png`.
 - Mobile 390px screenshot: `.factory/evidence/polish-2-demo-mobile.png`.
-- Live URL recheck is recorded in the handoff after the pushed static deployment is available.
+- Live cold `https://offline-ledger-import.sociobot.in/demo?demo=1` passed in `.factory/evidence/live/polish-2/verify.json`. Live `/privacy/` and `/terms/` returned 200; an unknown route returned the styled 404. Fresh desktop and 390px Axe scans after running the sample had zero serious/critical findings.

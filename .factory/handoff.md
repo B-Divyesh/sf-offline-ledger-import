@@ -17,8 +17,12 @@ The cassette-era reconciliation zine identity is preserved. The first screen use
 
 ## Deployment / live check
 
-Push this commit to `main`; the static work-order deployment publishes `dist/`. After deployment, cold-check `/`, `/demo?demo=1`, `/privacy/`, `/terms/`, and an unknown route. Update this handoff with the deployed commit and live evidence in the same work order.
+Deployed with `/opt/fleet/lib/deploy-static.sh offline-ledger-import dist` after pushing `main` at `0871877`. The live home artifact reports `Last-Modified: Fri, 28 Aug 2026 14:46:15 GMT` and contains the repaired demo wording and purchase copy.
+
+- Cold `https://offline-ledger-import.sociobot.in/demo?demo=1`: 200, correct Demo title, `lang=en`, one h1, main, image alt text, labeled controls, and no console/page errors. Evidence: `.factory/evidence/live/polish-2/verify.json`.
+- Live `/privacy/` and `/terms/`: 200. An unknown route: styled HTTP 404 with “We could not find that page.”
+- Fresh live Playwright + Axe checks passed at 1440×900 and 390×844 after running the sample. The persistent banner, filename, exact repeat, balance gap, and `-$30.00` difference all intersected both initial viewports; there were zero serious/critical Axe findings.
 
 ## Known gaps
 
-None in the repaired product. A live deployment check is pending until the static host receives the pushed commit.
+None.
