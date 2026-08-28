@@ -405,7 +405,14 @@ test('the normal workflow makes no analytics or tracking requests @claim:no-anal
   await page.getByRole('button', { name: 'Export receipt' }).click();
   await receiptDownload;
   expect(requests.some((path) => /analytics|track|collect|telemetry|pixel/i.test(path))).toBe(false);
-  expect(requests.every((path) => path === '/' || path === '/demo' || path === '/sw.js' || path === '/manifest.webmanifest' || path === '/offline.html' || path === '/favicon.svg' || path === '/apple-touch-icon.png' || path.startsWith('/assets/') || path.startsWith('/src/') || path.startsWith('/node_modules/'))).toBe(true);
+  const allowedStaticPaths = new Set([
+    '/', '/demo', '/sw.js', '/manifest.webmanifest', '/offline.html',
+    '/index.html', '/demo/index.html', '/privacy/index.html', '/terms/index.html', '/404/index.html',
+    '/favicon.svg', '/apple-touch-icon.png', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png',
+    '/robots.txt', '/sitemap.xml'
+  ]);
+  const unexpected = requests.filter((path) => !allowedStaticPaths.has(path) && !path.startsWith('/assets/') && !path.startsWith('/src/') && !path.startsWith('/node_modules/'));
+  expect(unexpected).toEqual([]);
   const assetFiles = await readdir('dist/assets');
   const builtText = (await Promise.all(['dist/index.html', ...assetFiles.filter((file) => file.endsWith('.js')).map((file) => `dist/assets/${file}`)].map((file) => readFile(file, 'utf8')))).join('\n');
   expect(builtText).not.toMatch(/google-analytics|googletagmanager|segment\.com|sentry\.io|\/analytics|\/collect|\/telemetry/i);
