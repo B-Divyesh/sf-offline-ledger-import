@@ -31,5 +31,6 @@ describe('CSV import', () => {
   it('reports malformed files in actionable language', () => {
     expect(() => parseCsv('only one field\nvalue')).toThrow(/No CSV columns/);
     expect(() => parseCsv('A,B\n"unfinished,2')).toThrow(/not closed/);
+    expect(() => parseCsv('2026-03-01,Coffee,-5.00\n2026-03-02,Bus,-3.00')).toThrow(/first row must contain column names/i);
   });
 });

@@ -1,8 +1,8 @@
 import './styles.css';
 import { escapeCsv, importTransactions, parseCsv, parseMoney, suggestMapping } from './csv';
 import { reconcile } from './reconcile';
-import { clearDraft, loadDraft, loadReceipts, saveDraft, saveReceipt, setStorageNamespace } from './storage';
-import { cachedLicenseState, captureReturnedLicense, checkoutUrl, setLicenseStoragePrefix, storeLicense, verifyLicense } from './license';
+import { clearDraft, clearStorageNamespace, loadDraft, loadReceipts, saveDraft, saveReceipt, setStorageNamespace } from './storage';
+import { cachedLicenseState, captureReturnedLicense, checkoutUrl, clearStoredLicense, setLicenseStoragePrefix, storeLicense, verifyLicense } from './license';
 import { listenForServiceWorkerUpdate } from './service-worker';
 import type { CheckResult, ColumnMapping, CsvData, Draft } from './types';
 
@@ -140,7 +140,7 @@ function renderPreview(): void {
   $('#preview-body').innerHTML = csv.rows.slice(0, 3).map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell) || '<span aria-label="empty">—</span>'}</td>`).join('')}</tr>`).join('');
 }
 
-async function loadCsv(contents: string, sourceName: string, restoredMapping?: ColumnMapping, scrollToMapping = true): Promise<void> {
+async function loadCsv(contents: string, sourceName: string, restoredMapping?: ColumnMapping, scrollToMapping = true, persist = true): Promise<void> {
   try {
     const parsed = parseCsv(contents);
     csv = parsed; csvText = contents; filename = sourceName; result = null; includedOverrides = {};
@@ -149,7 +149,7 @@ async function loadCsv(contents: string, sourceName: string, restoredMapping?: C
     mapping = restoredMapping ?? suggestMapping(parsed.headers);
     populateMapping(mapping);
     // Show a loaded sample only after its selected storage namespace accepted it.
-    await persistDraft();
+    if (persist) await persistDraft();
     $('#file-status').innerHTML = `<strong>${escapeHtml(sourceName)}</strong> · ${parsed.rows.length.toLocaleString()} rows · ${parsed.headers.length} columns · delimiter ${parsed.delimiter === '\t' ? 'tab' : escapeHtml(parsed.delimiter)}`;
     show($('#file-status')); show(resetButton); show(mappingSection); show(resultSection, false);
     setMessage(importError, ''); setMessage(mappingError, ''); setStage(2);
@@ -161,7 +161,7 @@ async function loadCsv(contents: string, sourceName: string, restoredMapping?: C
 
 async function loadFile(file: File): Promise<void> {
   if (file.size > 20 * 1024 * 1024) {
-    setMessage(importError, 'This file is over 20 MB. Split the statement into smaller periods and check each one.');
+    setMessage(importError, 'This bank CSV is over 20 MB. Split it into smaller periods and check each one.');
     return;
   }
   ($('#statement-name') as HTMLInputElement).value = file.name.replace(/\.[^.]+$/, '');
@@ -212,13 +212,13 @@ function validateCheck(): { opening: number; closing: number } | null {
   return { opening, closing };
 }
 
-function runCheck(focusResult = true): void {
+function runCheck(focusResult = true, persist = true): void {
   const values = validateCheck();
   if (!values || !csv || !mapping) return;
   const imported = importTransactions(csv, mapping);
   result = reconcile(imported, values.opening, values.closing, includedOverrides);
   renderResult();
-  show(resultSection); setStage(3); void persistDraft();
+  show(resultSection); setStage(3); if (persist) void persistDraft();
   if (focusResult) {
     resultSection.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     resultStatus.focus({ preventScroll: true });
@@ -232,7 +232,7 @@ function renderResult(): void {
   let detail: string;
   let kind: 'success' | 'problem' | 'review';
   if (result.reconciled && candidateCount === 0) {
-    title = '✓ Balances agree. This track plays clean.';
+    title = '✓ Balances agree.';
     detail = `${result.rows.filter((row) => row.included).length} included rows move the opening balance to the supplied closing balance.`;
     kind = 'success';
   } else if (result.reconciled) {
@@ -345,9 +345,9 @@ async function restoreDraft(draft: Draft): Promise<void> {
   ($('#opening-balance') as HTMLInputElement).value = draft.opening ?? '';
   ($('#closing-balance') as HTMLInputElement).value = draft.closing ?? '';
   includedOverrides = draft.includedOverrides ?? {};
-  await loadCsv(draft.csvText, draft.filename || 'restored.csv', draft.mapping);
+  await loadCsv(draft.csvText, draft.filename || 'restored.csv', draft.mapping, true, false);
   includedOverrides = draft.includedOverrides ?? {};
-  if (draft.opening !== '' && draft.closing !== '') runCheck(false);
+  if (draft.opening !== '' && draft.closing !== '') runCheck(false, false);
 }
 
 function updateNetworkState(): void { show($('#offline-banner'), !navigator.onLine); }
@@ -367,7 +367,7 @@ async function renderLicense(): Promise<void> {
   show($('#archive-receipt'), proofUnlocked && Boolean(result));
   if (proofUnlocked) {
     const receipts = await loadReceipts().catch(() => []);
-    $('#archive-list').innerHTML = receipts.length ? receipts.map((item) => `<li><strong>${escapeHtml(item.statement)}</strong> · <time datetime="${escapeHtml(item.checkedAt)}">${escapeHtml(new Date(item.checkedAt).toLocaleDateString())}</time><br><span>${escapeHtml(item.summary)}</span><br><button class="text-button saved-receipt-download" type="button" data-receipt-id="${escapeHtml(item.id)}">Download saved receipt</button></li>`).join('') : '<li>No saved receipts yet. Run a check, then choose “Save to Proof Kit.”</li>';
+    $('#archive-list').innerHTML = receipts.length ? receipts.map((item) => `<li><strong>${escapeHtml(item.statement)}</strong> · <time datetime="${escapeHtml(item.checkedAt)}">${escapeHtml(new Date(item.checkedAt).toLocaleDateString())}</time><br><span>${escapeHtml(item.summary)}</span><br><button class="text-button saved-receipt-download" type="button" data-receipt-id="${escapeHtml(item.id)}">Export saved receipt</button></li>`).join('') : '<li>No saved receipts yet. Run a check, then choose “Save to Proof Kit.”</li>';
     document.querySelectorAll<HTMLButtonElement>('.saved-receipt-download').forEach((button) => button.addEventListener('click', () => {
       const saved = receipts.find((item) => item.id === button.dataset.receiptId);
       if (saved) download(saved.filename, saved.receiptText, 'text/plain;charset=utf-8');
@@ -397,14 +397,20 @@ async function loadSample(): Promise<void> {
   if (demoMode) runCheck(false);
 }
 $('#sample-button').addEventListener('click', () => { location.assign('/demo?demo=1'); });
+async function discardDemoSandbox(): Promise<void> {
+  await clearStorageNamespace();
+  clearStoredLicense();
+  csv = null; csvText = ''; filename = ''; mapping = null; result = null; includedOverrides = {};
+}
 $('#reset-demo').addEventListener('click', async () => {
-  await clearDraft();
+  await discardDemoSandbox();
   await loadSample();
+  await renderLicense();
   setMessage($('#demo-status'), 'Sample reset.');
 });
 $('#start-real').addEventListener('click', async (event) => {
   event.preventDefault();
-  await clearDraft();
+  await discardDemoSandbox();
   location.assign('/');
 });
 $('.skip-link').addEventListener('click', focusMainFromSkipLink);

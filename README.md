@@ -14,9 +14,9 @@ Open [the demo](https://offline-ledger-import.sociobot.in/demo). The demo opens 
 
 Your bank CSV stays in this browser during normal checks. The draft survives refresh and can be exported or restored as JSON. Download a backup before clearing browser data.
 
-Cleaned CSV and receipt exports are free. Proof Kit is a one-time $12 license for a local receipt index. See [privacy](https://offline-ledger-import.sociobot.in/privacy/) and [terms](https://offline-ledger-import.sociobot.in/terms/).
+You can export cleaned CSV files and receipts free. Proof Kit is a one-time $12 license for a local receipt index. See [privacy](https://offline-ledger-import.sociobot.in/privacy/) and [terms](https://offline-ledger-import.sociobot.in/terms/).
 
-The built app adds no analytics or external font/CDN requests. It serves its own app files.
+The built app adds no analytics. It loads fonts and app files from this site.
 
 ## Develop and verify
 

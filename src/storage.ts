@@ -37,6 +37,17 @@ export const saveDraft = (draft: Draft) => useStore('readwrite', (store) => stor
 export const loadDraft = () => useStore<Draft | undefined>('readonly', (store) => store.get('current'));
 export const clearDraft = () => useStore('readwrite', (store) => store.delete('current'));
 
+/** Delete an entire namespace when a disposable demo is reset or abandoned. */
+export function clearStorageNamespace(): Promise<void> {
+  const name = databaseName();
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(name);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error('Close other Ledger Import Check tabs, then try again.'));
+  });
+}
+
 /** A saved Proof Kit entry is self-contained after the active draft changes. */
 export interface ReceiptRecord {
   id: string;

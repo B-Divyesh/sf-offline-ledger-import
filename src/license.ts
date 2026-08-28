@@ -29,6 +29,12 @@ export function storeLicense(token: string): void {
   localStorage.removeItem(verdictKey());
 }
 
+/** Removes only the active namespace's license state. */
+export function clearStoredLicense(): void {
+  localStorage.removeItem(key());
+  localStorage.removeItem(verdictKey());
+}
+
 export function cachedLicenseState(): { token: string | null; unlocked: boolean } {
   const token = localStorage.getItem(key());
   if (!token) return { token: null, unlocked: false };

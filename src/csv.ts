@@ -54,6 +54,14 @@ export function parseCsv(text: string): CsvData {
   if (matrix.length < 2) throw new Error('The CSV has a header but no transaction rows.');
 
   const rawHeaders = matrix[0] ?? [];
+  const dataLikeCells = rawHeaders.filter((value) => {
+    const trimmed = value.trim();
+    return /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/.test(trimmed) ||
+      /^[-+]?\(?[£$€]?\d[\d,.' ]*\)?$/.test(trimmed);
+  }).length;
+  if (dataLikeCells >= Math.ceil(rawHeaders.length / 2)) {
+    throw new Error('The first row must contain column names. Export the bank CSV with its header row included.');
+  }
   const seen = new Map<string, number>();
   const headers = rawHeaders.map((raw, index) => {
     const base = normalizeHeader(raw) || `Column ${index + 1}`;

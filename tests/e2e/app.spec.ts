@@ -19,6 +19,27 @@ async function readStore(page: import('@playwright/test').Page, name: string, ke
   }, { name, key });
 }
 
+async function databaseNames(page: import('@playwright/test').Page): Promise<string[]> {
+  return page.evaluate(async () => (await indexedDB.databases()).flatMap((database) => database.name ? [database.name] : []));
+}
+
+async function seedDraft(page: import('@playwright/test').Page, name: string, filename = 'real.csv'): Promise<void> {
+  await page.evaluate(async ({ name, filename }) => {
+    const request = indexedDB.open(name, 1);
+    await new Promise<void>((resolve, reject) => {
+      request.onupgradeneeded = () => request.result.createObjectStore('local-data');
+      request.onsuccess = () => {
+        const database = request.result;
+        const transaction = database.transaction('local-data', 'readwrite');
+        transaction.objectStore('local-data').put({ version: 1, filename, csvText: 'Date,Description,Amount\n01/01/2026,Real,1', statementName: 'Real data', currency: 'USD', opening: '0', closing: '1', mapping: { date: 0, description: 1, amountMode: 'signed', amount: 2, debit: -1, credit: -1, balance: -1, dateFormat: 'mdy' }, includedOverrides: {}, savedAt: '2026-08-28T00:00:00.000Z' }, 'current');
+        transaction.oncomplete = () => { database.close(); resolve(); };
+        transaction.onerror = () => reject(transaction.error);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }, { name, filename });
+}
+
 async function openDemoAndCheck(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/demo');
   await expect(page.getByLabel('Demo controls')).toBeVisible();
@@ -30,34 +51,46 @@ test('demo keeps production IndexedDB and license keys byte-for-byte unchanged @
   await page.goto('/');
   await page.evaluate(() => {
     localStorage.setItem('sb_license:offline-ledger-import', 'REAL-LICENSE');
-    localStorage.setItem('sb_license:offline-ledger-import:verdict', JSON.stringify({ valid: true, checkedAt: 1 }));
+    localStorage.setItem('sb_license:offline-ledger-import:verdict', JSON.stringify({ valid: true, checkedAt: Date.now() }));
   });
   const before = await page.evaluate(() => ({ ...localStorage }));
-  await page.evaluate(async () => {
-    const request = indexedDB.open('ledger-import-check', 1);
-    await new Promise<void>((resolve, reject) => {
-      request.onupgradeneeded = () => request.result.createObjectStore('local-data');
-      request.onsuccess = () => { request.result.transaction('local-data', 'readwrite').objectStore('local-data').put({ version: 1, filename: 'real.csv', csvText: 'Date,Description,Amount\\n01/01/2026,Real,1', statementName: 'Real data', currency: 'USD', opening: '0', closing: '1', mapping: { date: 0, description: 1, amountMode: 'signed', amount: 2, debit: -1, credit: -1, balance: -1, dateFormat: 'mdy' }, includedOverrides: {}, savedAt: new Date().toISOString() }, 'current'); request.result.close(); resolve(); };
-      request.onerror = () => reject(request.error);
-    });
-  });
+  await seedDraft(page, 'ledger-import-check');
   const realDraft = await readStore(page, 'ledger-import-check', 'current');
   await page.goto('/demo?demo=1');
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
   await expect(page.getByText('example-march-2026.csv').first()).toBeVisible();
   await expect(page.getByText('real.csv')).toHaveCount(0);
+  await page.evaluate(() => {
+    localStorage.setItem('demo:sb_license:offline-ledger-import', 'DEMO-LICENSE');
+    localStorage.setItem('demo:sb_license:offline-ledger-import:verdict', JSON.stringify({ valid: true, checkedAt: Date.now() }));
+  });
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Save to Proof Kit' })).toBeVisible();
+  await page.getByRole('button', { name: 'Save to Proof Kit' }).click();
+  await expect(page.getByText('Receipt snapshot saved locally.')).toBeVisible();
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(page.getByText('Sample reset.')).toBeVisible();
-  const names = await page.evaluate(async () => (await indexedDB.databases()).map((database) => database.name));
+  const names = await databaseNames(page);
   expect(names).toContain('ledger-import-check');
   expect(names).toContain('demo:ledger-import-check');
   expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(before);
   expect(await readStore(page, 'ledger-import-check', 'current')).toEqual(realDraft);
-  expect(await readStore(page, 'demo:ledger-import-check', 'current')).not.toEqual(realDraft);
+  expect(await readStore(page, 'demo:ledger-import-check', 'receipts')).toBeUndefined();
+  await page.evaluate(async () => {
+    localStorage.setItem('demo:sb_license:offline-ledger-import', 'DEMO-EXIT-LICENSE');
+    localStorage.setItem('demo:sb_license:offline-ledger-import:verdict', JSON.stringify({ valid: true, checkedAt: Date.now() }));
+    const request = indexedDB.open('demo:ledger-import-check', 1);
+    const database = await new Promise<IDBDatabase>((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+    const transaction = database.transaction('local-data', 'readwrite');
+    transaction.objectStore('local-data').put([{ id: 'demo-receipt', statement: 'Demo receipt', checkedAt: '2026-08-28T00:00:00.000Z', summary: 'Demo', filename: 'demo.txt', receiptText: 'Demo receipt' }], 'receipts');
+    await new Promise<void>((resolve, reject) => { transaction.oncomplete = () => { database.close(); resolve(); }; transaction.onerror = () => reject(transaction.error); });
+  });
   await page.getByRole('link', { name: 'Start for real' }).click();
   await expect(page).toHaveURL(/\/$/);
-  await page.goto('/demo');
-  await expect(page.getByText('restored from this browser')).toHaveCount(0);
+  await expect(page.locator('#file-status')).toContainText('real.csv');
+  expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(before);
+  expect(await readStore(page, 'ledger-import-check', 'current')).toEqual(realDraft);
+  expect(await databaseNames(page)).not.toContain('demo:ledger-import-check');
 });
 
 test('sample detects the exact repeated transaction @claim:duplicate-detection', async ({ page }) => {
@@ -69,6 +102,72 @@ test('sample reports the supplied closing-balance difference and balance gap @cl
   await openDemoAndCheck(page);
   await expect(page.getByText('1 balance gap located.')).toBeVisible();
   await expect(page.getByText('-$30.00', { exact: true }).first()).toBeVisible();
+});
+
+test('suggests each mapping from nontrivial bank CSV column names @claim:column-suggestions', async ({ page }) => {
+  await page.goto('/demo');
+  await page.locator('#csv-file').setInputFiles({
+    name: 'suggestions.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Posted Date,Narration,Money Out,Money In,Running Balance\n2026-03-01,Groceries,12.50,,987.50')
+  });
+  await expect(page.getByLabel('Date column')).toHaveValue('0');
+  await expect(page.getByLabel('Description column')).toHaveValue('1');
+  await expect(page.getByRole('radio', { name: 'Debit + credit' })).toBeChecked();
+  await expect(page.getByLabel('Debit / money out')).toHaveValue('2');
+  await expect(page.getByLabel('Credit / money in')).toHaveValue('3');
+  await expect(page.getByLabel(/Running balance/)).toHaveValue('4');
+});
+
+test('marks the source row where the sample balance gap starts @claim:balance-gap-location', async ({ page }) => {
+  await openDemoAndCheck(page);
+  const utilityRow = page.locator('#result-rows tr').filter({ hasText: 'Utilities' });
+  await expect(utilityRow).toContainText('source row 7');
+  await expect(utilityRow).toContainText('Balance gap starts -$30.00');
+});
+
+test('excluding a normal row updates the balance and cleaned export @claim:include-toggle', async ({ page }) => {
+  await openDemoAndCheck(page);
+  await page.getByRole('checkbox', { name: 'Include Groceries' }).uncheck();
+  await expect(page.locator('#result-meters div').nth(1)).toContainText('Included');
+  await expect(page.locator('#result-meters div').nth(1)).toContainText('4');
+  await expect(page.locator('#result-meters div').nth(4)).toContainText('-$95.50');
+  const csvDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export cleaned CSV' }).click();
+  const download = await csvDownload;
+  const payload = await readFile((await download.path()) as string, 'utf8');
+  expect(payload).not.toContain('Groceries');
+  expect(payload).toContain('Utilities');
+});
+
+test('sorts transactions by date while retaining source order for same-day rows @claim:chronological-order', async ({ page }) => {
+  await page.goto('/demo');
+  await page.locator('#csv-file').setInputFiles({
+    name: 'shuffled.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Date,Description,Amount\n2026-03-03,Third,1\n2026-03-01,First,2\n2026-03-02,Second first,3\n2026-03-02,Second second,4')
+  });
+  await page.getByLabel('Opening balance').fill('0');
+  await page.getByLabel('Closing balance').fill('10');
+  await page.getByRole('button', { name: 'Run balance check' }).click();
+  const rows = await page.locator('#result-rows tr').allTextContents();
+  expect(rows).toHaveLength(4);
+  expect(rows[0]).toContain('First');
+  expect(rows[1]).toContain('Second first');
+  expect(rows[1]).toContain('source row 4');
+  expect(rows[2]).toContain('Second second');
+  expect(rows[2]).toContain('source row 5');
+  expect(rows[3]).toContain('Third');
+});
+
+test('rejects a bank CSV with no header row and explains the recovery @claim:header-row-required', async ({ page }) => {
+  await page.goto('/demo');
+  await page.locator('#csv-file').setInputFiles({
+    name: 'no-header.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('2026-03-01,Coffee,-5.00\n2026-03-02,Bus,-3.00')
+  });
+  await expect(page.locator('#import-error')).toHaveText('The first row must contain column names. Export the bank CSV with its header row included.');
 });
 
 test('sample exports a cleaned CSV @claim:csv-export', async ({ page }) => {
@@ -88,7 +187,7 @@ test('sample exports a cleaned CSV @claim:csv-export', async ({ page }) => {
 test('sample exports a reconciliation receipt @claim:receipt-export', async ({ page }) => {
   await openDemoAndCheck(page);
   const receiptDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download receipt' }).click();
+  await page.getByRole('button', { name: 'Export receipt' }).click();
   const download = await receiptDownload;
   expect(download.suggestedFilename()).toMatch(/receipt\.txt$/);
   const payload = await readFile((await download.path()) as string, 'utf8');
@@ -129,7 +228,7 @@ test('imports comma, tab, and semicolon statements through the demo @claim:delim
     await page.getByLabel('Opening balance').fill('0');
     await page.getByLabel('Closing balance').fill('10');
     await page.getByRole('button', { name: /Run balance check/ }).click();
-    await expect(page.getByText('Balances agree. This track plays clean.')).toBeVisible();
+    await expect(page.getByText('Balances agree.', { exact: true })).toBeVisible();
   }
 });
 
@@ -197,7 +296,7 @@ test('a cached Proof Kit license can save a local receipt index entry @claim:rec
   await page.reload();
   await expect(page.locator('#archive-list')).toContainText('Example current account · March 2026');
   const savedDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download saved receipt' }).click();
+  await page.getByRole('button', { name: 'Export saved receipt' }).click();
   const savedReceipt = await savedDownload;
   expect(await readFile((await savedReceipt.path()) as string, 'utf8')).toContain('Unexplained difference: -$30.00');
 });
@@ -209,10 +308,63 @@ test('Proof Kit states the recorded one-time Sociobot/Dodo checkout contract @cl
   expect(contract.checkout_path).toBe('/api/v1/products/offline-ledger-import/checkout');
   await page.goto('/');
   await expect(page.getByText('$12 one-time')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Buy Proof Kit' })).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout');
+  await expect(page.getByRole('link', { name: 'Buy on Sociobot' })).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout');
   await page.goto('/terms/');
   await expect(page.getByText(/Sociobot\/Dodo is the merchant of record/)).toBeVisible();
   await expect(page.getByText(/Refunds are handled there and revoke the license/)).toBeVisible();
+});
+
+test('buying uses the recorded Sociobot route and Dodo checkout destination @claim:checkout-destination', async ({ page }) => {
+  const contract = JSON.parse(await readFile('tests/fixtures/checkout-contract.json', 'utf8')) as { checkout_host: string };
+  const requests: { url: string; method: string }[] = [];
+  await page.route('https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout', async (route) => {
+    requests.push({ url: route.request().url(), method: route.request().method() });
+    await route.fulfill({ status: 204, headers: { 'access-control-allow-origin': 'http://127.0.0.1:4173' } });
+  });
+  await page.goto('/');
+  await expect(page.getByText('Opens secure Sociobot/Dodo checkout.')).toBeVisible();
+  const href = await page.getByRole('link', { name: 'Buy on Sociobot' }).getAttribute('href');
+  expect(href).toBe('https://api.sociobot.in/api/v1/products/offline-ledger-import/checkout');
+  expect(contract.checkout_host).toBe('checkout.dodopayments.com');
+  await page.evaluate(async (checkoutUrl) => { await fetch(checkoutUrl); }, href as string);
+  expect(requests).toEqual([{ url: href, method: 'GET' }]);
+});
+
+test('unlicensed normal workspaces keep every export free and local @claim:free-exports', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await page.goto('/');
+  await page.locator('#csv-file').setInputFiles({
+    name: 'free-export.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Date,Description,Amount\n2026-03-01,Invoice,10.00')
+  });
+  await page.getByLabel('Opening balance').fill('0');
+  await page.getByLabel('Closing balance').fill('10');
+  await page.getByRole('button', { name: 'Run balance check' }).click();
+  await expect(page.getByText('Balances agree.', { exact: true })).toBeVisible();
+  for (const button of ['Export cleaned CSV', 'Export receipt', 'Download draft backup']) {
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: button }).click();
+    expect((await download).suggestedFilename()).toBeTruthy();
+  }
+  expect(requests.some((url) => url.includes('api.sociobot.in') || url.includes('/checkout'))).toBe(false);
+});
+
+test('starting for real restores the saved workspace and discards the demo @claim:start-real-workspace', async ({ page }) => {
+  await page.goto('/');
+  await seedDraft(page, 'ledger-import-check', 'saved-real.csv');
+  await page.goto('/demo?demo=1');
+  await page.locator('#csv-file').setInputFiles({
+    name: 'changed-demo.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Date,Description,Amount\n2026-03-01,Demo change,2.00')
+  });
+  await expect(page.locator('#file-status')).toContainText('changed-demo.csv');
+  await page.getByRole('link', { name: 'Start for real' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#file-status')).toContainText('saved-real.csv');
+  expect(await databaseNames(page)).not.toContain('demo:ledger-import-check');
 });
 
 test('Erase local draft removes the active bank CSV @claim:erase-draft', async ({ page }) => {
@@ -243,7 +395,7 @@ test('the normal workflow makes no analytics or tracking requests @claim:no-anal
   await page.getByRole('button', { name: 'Export cleaned CSV' }).click();
   await csvDownload;
   const receiptDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download receipt' }).click();
+  await page.getByRole('button', { name: 'Export receipt' }).click();
   await receiptDownload;
   expect(requests.some((path) => /analytics|track|collect|telemetry|pixel/i.test(path))).toBe(false);
   expect(requests.every((path) => path === '/' || path === '/demo' || path === '/sw.js' || path === '/manifest.webmanifest' || path === '/offline.html' || path.startsWith('/assets/') || path.startsWith('/src/') || path.startsWith('/node_modules/'))).toBe(true);
@@ -284,7 +436,7 @@ test('example completes the workflow and exports both evidence files', async ({ 
   await page.getByRole('button', { name: 'Export cleaned CSV' }).click();
   expect((await csvDownload).suggestedFilename()).toMatch(/clean\.csv$/);
   const receiptDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download receipt' }).click();
+  await page.getByRole('button', { name: 'Export receipt' }).click();
   expect((await receiptDownload).suggestedFilename()).toMatch(/receipt\.txt$/);
   expect(consoleErrors).toEqual([]);
 });
@@ -299,6 +451,14 @@ test('has no serious accessibility violations in the checked result @regression:
   await openDemoAndCheck(page);
   const results = await new AxeBuilder({ page: page as never }).analyze();
   expect(results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''))).toEqual([]);
+});
+
+test('has no serious accessibility violations on the legal and error routes', async ({ page }) => {
+  for (const route of ['/privacy/', '/terms/', '/404/']) {
+    await page.goto(route);
+    const results = await new AxeBuilder({ page: page as never }).analyze();
+    expect(results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''))).toEqual([]);
+  }
 });
 
 test('fits a 390px viewport without page-level horizontal scrolling', async ({ page }, testInfo) => {
@@ -377,6 +537,17 @@ test('all product controls meet 44px touch targets at 390px @regression:touch-ta
   expect(undersized).toEqual([]);
 });
 
+test('legal and error routes keep every visible target at 44px on mobile @regression:route-touch-targets', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile');
+  for (const route of ['/privacy/', '/terms/', '/404/']) {
+    await page.goto(route);
+    const undersized = await page.locator('a, button, summary, label[for]').evaluateAll((items) => items.filter((item) => {
+      const box = item.getBoundingClientRect(); return box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44);
+    }).map((item) => `${item.tagName}:${item.textContent?.trim()}`));
+    expect(undersized, route).toEqual([]);
+  }
+});
+
 test('skip link moves keyboard focus to the main landmark @regression:skip-link', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
@@ -387,10 +558,13 @@ test('skip link moves keyboard focus to the main landmark @regression:skip-link'
 
 test('real routes have their own title, metadata, shared shell, and focused heading', async ({ page }) => {
   const routes = [
+    ['/', 'Ledger Import Check — check bank CSVs'],
+    ['/demo?demo=1', 'Demo — Ledger Import Check'],
     ['/privacy/', 'Privacy — Ledger Import Check'],
     ['/terms/', 'Terms — Ledger Import Check'],
     ['/404/', 'Page not found — Ledger Import Check']
   ] as const;
+  let sharedFooter = '';
   for (const [route, title] of routes) {
     await page.goto(route);
     await expect(page).toHaveTitle(title);
@@ -400,6 +574,20 @@ test('real routes have their own title, metadata, shared shell, and focused head
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
     await expect(page.locator('header nav a')).toHaveCount(4);
     await expect(page.locator('footer')).toContainText('Built by Param Factory');
+    const footer = (await page.locator('footer').innerText()).replace(/\s+/g, ' ').trim();
+    if (sharedFooter) expect(footer).toBe(sharedFooter);
+    else sharedFooter = footer;
+    expect(footer).toMatch(/build [a-f0-9]{7,12}/);
     await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   }
+});
+
+test('header navigation and Back return focus to the destination heading', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Privacy' }).first().click();
+  await expect(page).toHaveURL(/\/privacy\/$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Your bank CSV stays in this browser' })).toBeFocused();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Check bank CSVs before importing' })).toBeFocused();
 });
