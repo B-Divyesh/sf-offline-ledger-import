@@ -11,6 +11,7 @@
 | No sign-in | 2 | pass |
 | Export cleaned CSV and receipt | 5 | pass |
 | One local copy. Three checks. A receipt you can keep. | 10 | pass |
+| Offline setup did not finish. Reload this page while online to try again. | 13 | pass |
 
 No sentence exceeds 22 words. The banned-word scan is clear.
 
