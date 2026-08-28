@@ -1,5 +1,18 @@
 # Ledger Import Check — build handoff
 
+> ## Independent verification status: **FAIL — do not release**
+>
+> Verified 2026-08-28 against commit
+> `b03af75fafcc6b126e13547def6b96abe372240b` and
+> `https://offline-ledger-import.sociobot.in`. The deployment exactly matches
+> the candidate, but it fails the mandatory claims contract (missing
+> `.factory/claims.json`), cold first-read/sample-demo gate, and demo data
+> isolation requirement. A service-worker update also reaches `waiting`
+> without exposing the update toast. See `.factory/verification.md` for exact
+> commands, evidence, successful checks, severity-ranked defects, and the
+> observed rate-limit threshold. This supersedes the release implication of
+> the build verification below.
+
 Work order: `offline-ledger-import-build-1`
 
 Completed: 2026-08-28
