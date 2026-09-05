@@ -1,4 +1,25 @@
-# Handoff — polish 3 complete
+# Handoff — verification 4 complete
+
+## Verification result
+
+**FAIL — one minor claims-contract finding remains.** Independent verification
+on 2026-09-05 reviewed implementation `2b1cd6674f49`; the report/docs commit
+is `e597a13`. The live artifact is byte-identical to a fresh build of that
+unchanged implementation. See `.factory/verification-4.md` for the complete
+evidence and required repair.
+
+All 27 registered claim commands passed from a separate clean checkout, as
+did `npm test` (12/12), `npx tsc --noEmit`, `npm run build`, and the full
+browser suite (75 passed, 5 expected skips). Live desktop/phone, sample,
+reset/exit isolation, offline reload, routes, legal pages, accessibility,
+links, privacy, and metadata checks passed.
+
+The release is not accepted because the public “over 20 MB” input-limit
+message has no `claims.json` entry or tagged sandbox test. Add a precise
+boundary/recovery claim test or remove the numeric public promise, then rerun
+verification. No product code was changed during verification.
+
+## Prior handoff
 
 ## Delivered
 
