@@ -53,7 +53,7 @@ demo state, and every workflow sentence and label shipped in `index.html`.
 | Offline setup did not finish. | 5 | pass |
 | Reload this page while online to try again. | 8 | pass |
 | The first row must contain column names. Export the bank CSV with its header row included. | 15 | pass |
-| This bank CSV is over 20 MB. Split it into smaller periods and check each one. | 17 | pass |
+| This bank CSV is over 20 MB. Split it into smaller periods and check each one. | 17 | pass; `@claim:20mb-input-limit` |
 | ✓ Balances agree. | 3 | pass |
 | The balances do not agree yet. | 7 | pass |
 | Balance gap starts | 3 | pass |

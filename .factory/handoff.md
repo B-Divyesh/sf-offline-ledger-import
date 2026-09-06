@@ -1,65 +1,84 @@
-# Handoff — verification 4 complete
+# Handoff — repair 3 complete
 
-## Verification result
+## Outcome
 
-**FAIL — one minor claims-contract finding remains.** Independent verification
-on 2026-09-05 reviewed implementation `2b1cd6674f49`; the report/docs commit
-is `e597a13`. The live artifact is byte-identical to a fresh build of that
-unchanged implementation. See `.factory/verification-4.md` for the complete
-evidence and required repair.
+Closed F-4-1 from `verification-4.md`. A bank CSV larger than **20 MB
+(20,000,000 bytes)** is rejected with a clear recovery step. The user can then
+import and reconcile a smaller bank CSV without reloading.
 
-All 27 registered claim commands passed from a separate clean checkout, as
-did `npm test` (12/12), `npx tsc --noEmit`, `npm run build`, and the full
-browser suite (75 passed, 5 expected skips). Live desktop/phone, sample,
-reset/exit isolation, offline reload, routes, legal pages, accessibility,
-links, privacy, and metadata checks passed.
+Implementation commit: `9271e56d080d4918a524639ab22abae4f5f8f255`
 
-The release is not accepted because the public “over 20 MB” input-limit
-message has no `claims.json` entry or tagged sandbox test. Add a precise
-boundary/recovery claim test or remove the numeric public promise, then rerun
-verification. No product code was changed during verification.
+The live HTTPS artifact was deployed from that implementation and identifies
+itself as `build 9271e56d080d`. Documentation/evidence commits made after this
+handoff do not change the deployed product artifact.
 
-## Prior handoff
+## What changed
 
-## Delivered
-
-Resolved every finding in `review-1.md`, `review-2.md`, and `review-3.md`.
-The published artifact is code commit `2b1cd6674f49` and is live at
-<https://offline-ledger-import.sociobot.in/>. Repair commits were pushed to
-`main`; the final evidence map is `.factory/polish-3.md`.
-
-The repair makes demo reset and exit delete the complete demo-only IndexedDB
-database and every demo license key. It adds all missing claims and observable
-tests, rewrites the remaining ambiguous copy, supplies a real artifact SHA in
-the common footer, standardizes route metadata/legal pages, and raises text
-actions to a 48px minimum target without changing the cassette-zine visual
-system.
+- Added `20mb-input-limit` to `.factory/claims.json`.
+- Added an outcome-based browser test. It selects a 20,000,001-byte CSV,
+  observes the recovery message, then imports and reconciles a smaller CSV.
+- Made the implementation's advertised limit exact: 20 MB is
+  `20,000,000` bytes, rather than an implicit 20 MiB threshold.
+- Copied the verb-first catalog description to
+  `/work/.evidence/catalog-description.txt`.
 
 ## Verification
 
-- Fresh clone at `2b1cd6674f49`: `npm ci`, `npm test` (12/12),
-  `npx tsc --noEmit`, and `npm run build` all passed.
-- Every one of the 27 commands declared in `.factory/claims.json` was run from
-  that clean clone. The final full suite also executed every claim across
-  desktop and 390px mobile: `npm run test:e2e` passed **75 tests** with
-  **5 intentional project skips** and no failures. Exact command output is in
-  `.factory/evidence/polish-3/clean-claims.log` and `clean-e2e.log`.
-- Browser suite covers real demo isolation/reset/exit, downloads, local-only
-  request allowlists, offline reload, data deletion, metadata/focus/Back,
-  desktop/mobile accessibility, and 44px touch targets.
-- Live cold checks passed for `/`, `/demo?demo=1`, `/privacy/`, `/terms/`, and
-  `/404/`; `verify-url.sh` reports no console errors, one h1, one main, `lang`,
-  titles, and complete image/button labels on home and demo.
-- A live reset/exit probe wrote demo-only license/receipt state, reset it,
-  confirmed no demo keys or receipt remained, then confirmed Start for real
-  removed the demo database. The live routes share `build 2b1cd6674f49`.
-- Live Playwright Axe scans found zero serious/critical violations on home,
-  demo, privacy, terms, and 404. (The Selenium-based Axe CLI cannot launch its
-  own Chrome binary in this worker; the repository's Playwright Axe integration
-  is the executed accessibility gate.)
-- Lighthouse evidence: desktop Performance 100, Accessibility 100,
-  Best Practices 96, SEO 100 (LCP 0.4s, CLS 0.002); mobile Performance 98,
-  Accessibility 100, Best Practices 100, SEO 100 (LCP 1.5s, CLS 0.074).
+From a fresh GitHub checkout of `9271e56`:
+
+```sh
+npm ci
+npm test
+npx tsc --noEmit
+npm run build
+# each of the 28 exact commands in .factory/claims.json
+npm run test:e2e
+```
+
+Results:
+
+- `npm test`: 12 passed.
+- Type check and production build: passed; `dist/index.html` produced.
+- All 28 declared claim commands passed independently, including the new
+  browser boundary/recovery claim in desktop and 390px phone projects.
+- Full Playwright suite: 77 passed and 5 intentional project skips (82
+  scheduled checks).
+
+Live deployment and cold-browser checks:
+
+- Deployed with `/opt/fleet/lib/deploy-static.sh offline-ledger-import dist`.
+  The existing static product configuration was reused; no backend, volume,
+  or replica settings were changed.
+- HTTPS home returned 200 with the implementation build ID, CSP, HSTS,
+  `nosniff`, framing protection, Referrer-Policy, and Permissions-Policy.
+- Fresh desktop and 390×844 phone pages said, before scrolling: job **“Check
+  bank CSVs before importing”**, audience **households and freelancers**, and
+  first action **“Try it with sample data.”**
+- On both devices the one-click demo showed the persistent sample banner,
+  filename, exact repeat, balance gap, and `-$30.00` difference. Reset restored
+  the sample. A temporary seeded normal draft survived demo reset and
+  **Start for real** unchanged.
+- The deployed 20,000,001-byte boundary flow showed the recovery message, then
+  a smaller CSV reconciled successfully. No console or page errors occurred.
+- A fresh live service worker controlled `/demo?demo=1`; its demo reloaded
+  offline with the sample and offline notice.
+- `/opt/fleet/lib/verify-url.sh` passed: HTTPS 200, title, `lang=en`, one h1,
+  main landmark, complete image alt text, labeled buttons, and no console
+  errors.
+- Live Playwright Axe scans on desktop and phone found zero serious/critical
+  issues on home, demo, privacy, terms, the styled `/404/` route, and an
+  unknown route. The unknown route correctly returned HTTP 404; its expected
+  browser resource warning was not treated as a product error.
+- The public one-time Proof Kit checkout remains active: the product checkout
+  endpoint returned HTTP 303 to Sociobot/Dodo. No payment was made and no
+  billing registration work was needed.
+
+## Prior findings
+
+The fresh claim matrix and full suite reran the repair coverage recorded in
+`polish-3.md`. Review findings F-1-1 through F-1-14, F-2-1 through F-2-11,
+and F-3-1 through F-3-11 remain closed. F-4-1 is now closed by the new
+registered boundary/recovery claim.
 
 ## Run and deploy
 
