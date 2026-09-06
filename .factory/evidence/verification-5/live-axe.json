@@ -1,0 +1,86 @@
+[
+  {
+    "profile": "desktop",
+    "route": "/",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "desktop",
+    "route": "/demo?demo=1",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "desktop",
+    "route": "/privacy/",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "desktop",
+    "route": "/terms/",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "desktop",
+    "route": "/404/",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "desktop",
+    "route": "/missing-verification-5",
+    "status": 404,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "phone",
+    "route": "/",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "phone",
+    "route": "/demo?demo=1",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "phone",
+    "route": "/privacy/",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "phone",
+    "route": "/terms/",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "phone",
+    "route": "/404/",
+    "status": 200,
+    "violations": [],
+    "seriousOrCritical": 0
+  },
+  {
+    "profile": "phone",
+    "route": "/missing-verification-5",
+    "status": 404,
+    "violations": [],
+    "seriousOrCritical": 0
+  }
+]

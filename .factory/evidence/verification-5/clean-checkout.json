@@ -1,0 +1,46 @@
+{
+  "checkout_commit": "5cab4ebabc3966e3fe365395abd5c454b0cbd30a",
+  "candidate_commit": "9271e56d080d4918a524639ab22abae4f5f8f255",
+  "npm_ci": "pass; 0 vulnerabilities",
+  "unit_tests": "12 passed",
+  "typecheck": "passed",
+  "build": "passed; dist produced",
+  "declared_claim_commands": {
+    "passed": 28,
+    "failed": 0,
+    "ids": [
+      "20mb-input-limit",
+      "demo-isolation",
+      "demo-first-viewport",
+      "first-read-demo",
+      "offline-reload",
+      "local-processing",
+      "no-sign-in",
+      "duplicate-detection",
+      "balance-check",
+      "csv-export",
+      "receipt-export",
+      "draft-recovery",
+      "delimited-import",
+      "json-draft-backup",
+      "erase-draft",
+      "receipt-index",
+      "proof-kit-price",
+      "self-hosted-assets",
+      "no-analytics",
+      "license-verification-network",
+      "column-suggestions",
+      "balance-gap-location",
+      "include-toggle",
+      "chronological-order",
+      "header-row-required",
+      "free-exports",
+      "start-real-workspace",
+      "checkout-destination"
+    ]
+  },
+  "full_browser_suite": {
+    "first_run": "Chromium signal 11 after 76 passes and 5 skips; no-analytics could not create its context",
+    "repeat_run": "77 passed; 5 intended skips"
+  }
+}

@@ -1,99 +1,87 @@
-# Handoff — repair 3 complete
+# Handoff — verification 5
 
 ## Outcome
 
-Closed F-4-1 from `verification-4.md`. A bank CSV larger than **20 MB
-(20,000,000 bytes)** is rejected with a clear recovery step. The user can then
-import and reconcile a smaller bank CSV without reloading.
+**FAIL.** Implementation candidate
+`9271e56d080d4918a524639ab22abae4f5f8f255` passes the repaired 20 MB path,
+all 28 declared claim commands, the repeat full browser suite, live desktop
+and phone checks, offline reload, Axe, and Lighthouse. Acceptance still fails
+because four other public promises have no complete declared claim tests.
 
-Implementation commit: `9271e56d080d4918a524639ab22abae4f5f8f255`
+Documentation base reviewed: `5cab4ebabc3966e3fe365395abd5c454b0cbd30a`.
+No product code was changed during verification.
 
-Documentation commit: `13f9311` (handoff and copy-audit record only; no
-product-source change).
+## Open findings
 
-The live HTTPS artifact was deployed from that implementation and identifies
-itself as `build 9271e56d080d`. Documentation/evidence commits made after this
-handoff do not change the deployed product artifact.
+- F-5-1: **Possible repeat** classification is public but absent from the
+  claim inventory and tests.
+- F-5-2: **Print / save PDF** is public but absent from the claim inventory
+  and tests.
+- F-5-3: conditional **Install app** is public but absent from the claim
+  inventory and tests.
+- F-5-4: **A fresh version is ready / Install update** is absent from the
+  claim inventory. The unit regression checks toast visibility only, not the
+  complete update action.
 
-## What changed
+Counts: `finding_count: 4`; `untested_claim_count: 4`.
 
-- Added `20mb-input-limit` to `.factory/claims.json`.
-- Added an outcome-based browser test. It selects a 20,000,001-byte CSV,
-  observes the recovery message, then imports and reconciles a smaller CSV.
-- Made the implementation's advertised limit exact: 20 MB is
-  `20,000,000` bytes, rather than an implicit 20 MiB threshold.
-- Copied the verb-first catalog description to
-  `/work/.evidence/catalog-description.txt`.
+The full evidence and required dispositions are in
+`.factory/verification-5.md`.
 
-## Verification
+## Verification completed
 
-From a fresh GitHub checkout of `9271e56`:
+From a clean detached checkout of `5cab4eb`:
 
 ```sh
 npm ci
 npm test
 npx tsc --noEmit
 npm run build
-# each of the 28 exact commands in .factory/claims.json
+# every exact test value in .factory/claims.json, run separately
 npm run test:e2e
 ```
 
 Results:
 
-- `npm test`: 12 passed.
-- Type check and production build: passed; `dist/index.html` produced.
-- All 28 declared claim commands passed independently, including the new
-  browser boundary/recovery claim in desktop and 390px phone projects.
-- Full Playwright suite: 77 passed and 5 intentional project skips (82
-  scheduled checks).
+- 28/28 declared claim commands passed.
+- Unit tests: 12 passed.
+- Type check and build: passed; `dist/` produced.
+- Full browser suite: 77 passed and 5 intended skips on the repeat run. The
+  first run had a Chromium signal-11 runner crash after 76 passes; the next
+  run was green, and the affected claim had passed independently.
+- Live desktop and phone first read, one-click demo, persistent banner, sample
+  output, reset, isolation, Start for real, exact 20 MB gate, over-limit
+  recovery, keyboard, reduced motion, 44 px targets, route titles, legal
+  pages, unknown-route HTTP 404, privacy traffic, and offline reload passed.
+- Live Axe: zero violations across six routes in both desktop and phone
+  contexts.
+- Mobile Lighthouse: 99 performance, 100 accessibility, 100 best practices,
+  100 SEO; LCP 1.2 s, TBT 0 ms, CLS 0.074.
+- Invalid-license burst: 30 HTTP 200 and 30 HTTP 429 responses; each 429 had
+  `Retry-After: 4`.
 
-Live deployment and cold-browser checks:
+## Candidate identity
 
-- Deployed with `/opt/fleet/lib/deploy-static.sh offline-ledger-import dist`.
-  The existing static product configuration was reused; no backend, volume,
-  or replica settings were changed.
-- HTTPS home returned 200 with the implementation build ID, CSP, HSTS,
-  `nosniff`, framing protection, Referrer-Policy, and Permissions-Policy.
-- Fresh desktop and 390×844 phone pages said, before scrolling: job **“Check
-  bank CSVs before importing”**, audience **households and freelancers**, and
-  first action **“Try it with sample data.”**
-- On both devices the one-click demo showed the persistent sample banner,
-  filename, exact repeat, balance gap, and `-$30.00` difference. Reset restored
-  the sample. A temporary seeded normal draft survived demo reset and
-  **Start for real** unchanged.
-- The deployed 20,000,001-byte boundary flow showed the recovery message, then
-  a smaller CSV reconciled successfully. No console or page errors occurred.
-- A fresh live service worker controlled `/demo?demo=1`; its demo reloaded
-  offline with the sample and offline notice.
-- `/opt/fleet/lib/verify-url.sh` passed: HTTPS 200, title, `lang=en`, one h1,
-  main landmark, complete image alt text, labeled buttons, and no console
-  errors.
-- Live Playwright Axe scans on desktop and phone found zero serious/critical
-  issues on home, demo, privacy, terms, the styled `/404/` route, and an
-  unknown route. The unknown route correctly returned HTTP 404; its expected
-  browser resource warning was not treated as a product error.
-- The public one-time Proof Kit checkout remains active: the product checkout
-  endpoint returned HTTP 303 to Sociobot/Dodo. No payment was made and no
-  billing registration work was needed.
+The live footer says `build 5cab4ebabc39`, a documentation-only commit after
+the implementation candidate. Live main JavaScript, CSS loader, and CSS are
+byte-identical to a fresh build of `9271e56`. Live `index.html` differs only
+in the injected footer build ID.
 
-## Prior findings
+## Evidence
 
-The fresh claim matrix and full suite reran the repair coverage recorded in
-`polish-3.md`. Review findings F-1-1 through F-1-14, F-2-1 through F-2-11,
-and F-3-1 through F-3-11 remain closed. F-4-1 is now closed by the new
-registered boundary/recovery claim.
+- Report: `.factory/verification-5.md`
+- Clean-checkout summary: `.factory/evidence/verification-5/clean-checkout.json`
+- Live machine checks: `.factory/evidence/verification-5/live-qa.json`
+- Live Axe: `.factory/evidence/verification-5/live-axe.json`
+- Lighthouse: `.factory/evidence/verification-5/lighthouse-mobile.json`
+- Fresh desktop and phone screenshots:
+  `.factory/evidence/verification-5/fresh-*-home.png` and
+  `.factory/evidence/verification-5/fresh-*-demo.png`
+- Worker checks: `.factory/evidence/verification-5/live-home/` and
+  `.factory/evidence/verification-5/live-demo/`
 
-## Run and deploy
+## Next step
 
-```sh
-npm ci
-npm test
-npx tsc --noEmit
-npm run build
-npm run test:e2e
-/opt/fleet/lib/deploy-static.sh offline-ledger-import dist
-```
-
-## Known gaps
-
-None.
+Register and test the four missing public claims, or remove their public
+actions/results. Then rerun every claim command and the full browser suite
+before the next independent verification.

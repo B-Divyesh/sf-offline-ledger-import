@@ -1,0 +1,182 @@
+{
+  "checkedAt": "2026-09-06T06:12:38.825Z",
+  "desktop": {
+    "before": {
+      "scrollY": 0,
+      "title": "Ledger Import Check — check bank CSVs",
+      "h1": "Check bank CSVs before importing",
+      "audience": "For households and freelancers: find repeats and balance gaps before importing.",
+      "action": "Try it with sample data →",
+      "actionResult": "Loads a checked sample bank CSV in a separate demo.",
+      "facts": [
+        "Works offline after the first visit",
+        "No sign-in",
+        "Export cleaned CSV and receipt"
+      ],
+      "h1Count": 1,
+      "mainCount": 1,
+      "active": "Check bank CSVs before importing"
+    },
+    "after": {
+      "title": "Demo — Ledger Import Check",
+      "h1": "Review a sample bank CSV",
+      "sampleLabel": "Demo / March 2026 bank CSV",
+      "banner": "Demo — sample data, nothing is saved",
+      "reset": "Reset demo",
+      "startReal": "Start for real",
+      "h1Count": 1,
+      "mainCount": 1
+    },
+    "visible": {
+      "Demo controls": true,
+      "example-march-2026.csv": true,
+      "1 exact repeat": true,
+      "1 balance gap": true,
+      "-$30.00 difference": true
+    },
+    "resetResult": "Sample reset.",
+    "errors": []
+  },
+  "phone": {
+    "before": {
+      "scrollY": 0,
+      "title": "Ledger Import Check — check bank CSVs",
+      "h1": "Check bank CSVs before importing",
+      "audience": "For households and freelancers: find repeats and balance gaps before importing.",
+      "action": "Try it with sample data →",
+      "actionResult": "Loads a checked sample bank CSV in a separate demo.",
+      "facts": [
+        "Works offline after the first visit",
+        "No sign-in",
+        "Export cleaned CSV and receipt"
+      ],
+      "h1Count": 1,
+      "mainCount": 1,
+      "active": "Check bank CSVs before importing"
+    },
+    "after": {
+      "title": "Demo — Ledger Import Check",
+      "h1": "Review a sample bank CSV",
+      "sampleLabel": "Demo / March 2026 bank CSV",
+      "banner": "Demo — sample data, nothing is saved",
+      "reset": "Reset demo",
+      "startReal": "Start for real",
+      "h1Count": 1,
+      "mainCount": 1
+    },
+    "visible": {
+      "Demo controls": true,
+      "example-march-2026.csv": true,
+      "1 exact repeat": true,
+      "1 balance gap": true,
+      "-$30.00 difference": true
+    },
+    "resetResult": "Sample reset.",
+    "errors": []
+  },
+  "boundary": {
+    "rejected": "This bank CSV is over 20 MB. Split it into smaller periods and check each one.",
+    "recovered": true,
+    "filename": "smaller-period.csv · 1 rows · 3 columns · delimiter ,",
+    "errors": []
+  },
+  "offline": {
+    "banner": "Demo — sample data, nothing is saved",
+    "sample": true,
+    "offline": true,
+    "registrations": 1,
+    "errors": []
+  },
+  "routes": [
+    {
+      "route": "/",
+      "status": 200,
+      "title": "Ledger Import Check — check bank CSVs",
+      "lang": "en",
+      "h1": [
+        "Check bank CSVs before importing"
+      ],
+      "main": 1,
+      "horizontalOverflow": 0,
+      "undersized": [],
+      "animated": 0,
+      "active": "Check bank CSVs before importing",
+      "errors": []
+    },
+    {
+      "route": "/demo?demo=1",
+      "status": 200,
+      "title": "Demo — Ledger Import Check",
+      "lang": "en",
+      "h1": [
+        "Review a sample bank CSV"
+      ],
+      "main": 1,
+      "horizontalOverflow": 0,
+      "undersized": [],
+      "animated": 0,
+      "active": "Review a sample bank CSV",
+      "errors": []
+    },
+    {
+      "route": "/privacy/",
+      "status": 200,
+      "title": "Privacy — Ledger Import Check",
+      "lang": "en",
+      "h1": [
+        "Your bank CSV stays in this browser"
+      ],
+      "main": 1,
+      "horizontalOverflow": 0,
+      "undersized": [],
+      "animated": 0,
+      "active": "Your bank CSV stays in this browser",
+      "errors": []
+    },
+    {
+      "route": "/terms/",
+      "status": 200,
+      "title": "Terms — Ledger Import Check",
+      "lang": "en",
+      "h1": [
+        "Check data consistency, not financial advice"
+      ],
+      "main": 1,
+      "horizontalOverflow": 0,
+      "undersized": [],
+      "animated": 0,
+      "active": "Check data consistency, not financial advice",
+      "errors": []
+    },
+    {
+      "route": "/404/",
+      "status": 200,
+      "title": "Page not found — Ledger Import Check",
+      "lang": "en",
+      "h1": [
+        "We could not find that page"
+      ],
+      "main": 1,
+      "horizontalOverflow": 0,
+      "undersized": [],
+      "animated": 0,
+      "active": "We could not find that page",
+      "errors": []
+    },
+    {
+      "route": "/missing-verification-5",
+      "status": 404,
+      "title": "Page not found — Ledger Import Check",
+      "lang": "en",
+      "h1": [
+        "We could not find that page"
+      ],
+      "main": 1,
+      "horizontalOverflow": 0,
+      "undersized": [],
+      "animated": 0,
+      "active": "We could not find that page",
+      "errors": []
+    }
+  ]
+}
