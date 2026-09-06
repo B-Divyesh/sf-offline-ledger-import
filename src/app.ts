@@ -16,6 +16,7 @@ const resultStatus = $('#result-status');
 const importError = $('#import-error');
 const mappingError = $('#mapping-error');
 const resetButton = $('#reset-button') as HTMLButtonElement;
+const MAX_BANK_CSV_BYTES = 20_000_000;
 
 let csv: CsvData | null = null;
 let csvText = '';
@@ -160,7 +161,7 @@ async function loadCsv(contents: string, sourceName: string, restoredMapping?: C
 }
 
 async function loadFile(file: File): Promise<void> {
-  if (file.size > 20 * 1024 * 1024) {
+  if (file.size > MAX_BANK_CSV_BYTES) {
     setMessage(importError, 'This bank CSV is over 20 MB. Split it into smaller periods and check each one.');
     return;
   }

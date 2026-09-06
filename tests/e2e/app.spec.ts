@@ -54,6 +54,30 @@ async function settleLayout(page: import('@playwright/test').Page): Promise<void
   });
 }
 
+test('rejects a bank CSV over 20 MB and accepts a smaller replacement @claim:20mb-input-limit', async ({ page }) => {
+  const twentyMegabytes = 20_000_000;
+  await page.goto('/demo');
+  await page.locator('#csv-file').setInputFiles({
+    name: 'over-20-mb.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.alloc(twentyMegabytes + 1, 0x20)
+  });
+  await expect(page.locator('#import-error')).toHaveText('This bank CSV is over 20 MB. Split it into smaller periods and check each one.');
+  await expect(page.locator('#file-status')).not.toContainText('over-20-mb.csv');
+
+  await page.locator('#csv-file').setInputFiles({
+    name: 'smaller-period.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('Date,Description,Amount\n2026-03-01,Smaller period,10.00')
+  });
+  await expect(page.locator('#import-error')).toBeHidden();
+  await expect(page.locator('#file-status')).toContainText('smaller-period.csv');
+  await page.getByLabel('Opening balance').fill('0');
+  await page.getByLabel('Closing balance').fill('10');
+  await page.getByRole('button', { name: 'Run balance check' }).click();
+  await expect(page.getByText('✓ Balances agree.', { exact: true })).toBeVisible();
+});
+
 test('demo keeps production IndexedDB and license keys byte-for-byte unchanged @claim:demo-isolation', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => {
