@@ -8,6 +8,9 @@ import and reconcile a smaller bank CSV without reloading.
 
 Implementation commit: `9271e56d080d4918a524639ab22abae4f5f8f255`
 
+Documentation commit: `13f9311` (handoff and copy-audit record only; no
+product-source change).
+
 The live HTTPS artifact was deployed from that implementation and identifies
 itself as `build 9271e56d080d`. Documentation/evidence commits made after this
 handoff do not change the deployed product artifact.
